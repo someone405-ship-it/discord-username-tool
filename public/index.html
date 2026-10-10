@@ -148,6 +148,15 @@
         <div class="section-label">Names to check</div>
         <p class="hint">Runs live Discord availability. Taken names are left alone — nothing is claimed.</p>
         <textarea id="namesStart" placeholder="Names appear here from Setup…"></textarea>
+        <div class="section-label" style="margin-top:10px">Check speed</div>
+        <p class="hint">Requests per second to Discord. Auto mode slows down if rate-limited or latency spikes.</p>
+        <div class="controls" style="align-items:center">
+          <label style="font-size:0.8rem;color:var(--muted);min-width:70px">RPS <b id="rpsVal">5</b></label>
+          <input id="rps" type="range" min="1" max="15" value="5" step="1" style="flex:1;margin:0;accent-color:#6c5ce7" />
+          <label style="font-size:0.78rem;color:var(--muted);display:flex;align-items:center;gap:6px;white-space:nowrap">
+            <input id="autoRate" type="checkbox" style="width:auto;margin:0" /> Auto
+          </label>
+        </div>
         <div class="controls">
           <button class="btn green" id="btnCheck">Start check</button>
           <button class="btn ghost" id="btnKeepAvail">Keep available only</button>
@@ -256,7 +265,7 @@
       if (!selected.size) return log('pick at least one preset', 'warn');
       const limit = document.getElementById('limit').value;
       const presets = [...selected];
-      log('generating stack [' + presets.join(' + ') + '] \u00d7 ' + limit + '\u2026', 'info');
+      log('generating stack [' + presets.join(' + ') + '] × ' + limit + '…', 'info');
       try {
         const r = await fetch('/api/generate', {
           method: 'POST', headers: { 'Content-Type': 'application/json' },
@@ -271,12 +280,14 @@
 
     document.getElementById('btnCheck').onclick = async () => {
       const list = namesStart.value.split(/\n/).map(s => s.trim()).filter(Boolean);
-      if (!list.length) return log('no names \u2014 generate on Setup first', 'warn');
-      log('checking ' + list.length + ' names\u2026', 'info');
+      if (!list.length) return log('no names — generate on Setup first', 'warn');
+      const rps = Number(document.getElementById('rps').value)||5;
+      const mode = document.getElementById('autoRate').checked ? 'auto' : 'fixed';
+      log('checking ' + list.length + ' names @ ' + rps + ' rps' + (mode==='auto'?' (auto)':'') + '…', 'info');
       try {
         const r = await fetch('/api/check', {
           method: 'POST', headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ usernames: list })
+          body: JSON.stringify({ usernames: list, rps, mode })
         }).then(x => x.json());
         if (!r.ok) return log('error: ' + r.error, 'bad');
         lastResults = r.results || [];
@@ -287,7 +298,7 @@
           if (x.status === 'available') log('AVAILABLE  @' + x.username, 'ok');
           else if (x.status === 'invalid') log('invalid    @' + x.username + '  ' + (x.reason || ''), 'warn');
         });
-        log('done \u2014 available: ' + r.summary.available + ' / taken: ' + r.summary.taken, 'info');
+        log('done — available: ' + r.summary.available + ' / taken: ' + r.summary.taken, 'info');
       } catch (e) { log('network error: ' + e.message, 'bad'); }
     };
 
@@ -301,7 +312,7 @@
     document.getElementById('btnOne').onclick = async () => {
       const username = document.getElementById('oneName').value.trim();
       if (!username) return log('type a name first', 'warn');
-      log('checking @' + username + '\u2026', 'info');
+      log('checking @' + username + '…', 'info');
       try {
         const r = await fetch('/api/check-one', {
           method: 'POST', headers: { 'Content-Type': 'application/json' },
@@ -319,6 +330,9 @@
     document.getElementById('oneName').addEventListener('keydown', e => {
       if (e.key === 'Enter') document.getElementById('btnOne').click();
     });
+    document.getElementById('rps').oninput = (e) => {
+      document.getElementById('rpsVal').textContent = e.target.value;
+    };
   </script>
 </body>
 </html>
