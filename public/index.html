@@ -7,10 +7,9 @@
 <style>
 :root{--bg:#0b0b10;--card:#14141c;--bd:#2a2a3a;--tx:#f0f0f8;--mu:#8b8ba0;--ac:#6c5ce7;--gn:#00d68f;--rd:#ff6b81;--yl:#ffc048;--bl:#54a0ff}
 *{box-sizing:border-box;margin:0;padding:0}
-body{font-family:system-ui,-apple-system,sans-serif;background:radial-gradient(800px 400px at 50% -10%,#1a1635,var(--bg));color:var(--tx);min-height:100vh;padding:16px}
-.wrap{max-width:700px;margin:0 auto}
-h1{font-size:1.3rem;margin-bottom:4px}
-.sub{color:var(--mu);font-size:.85rem;margin-bottom:14px}
+body{font-family:system-ui,-apple-system,sans-serif;background:radial-gradient(900px 420px at 50% -12%,#1a1635,var(--bg));color:var(--tx);min-height:100vh;padding:16px}
+.wrap{max-width:720px;margin:0 auto}
+h1{font-size:1.35rem} .sub{color:var(--mu);font-size:.85rem;margin:4px 0 14px}
 .tabs{display:flex;gap:6px;margin-bottom:12px;background:#101018;border:1px solid var(--bd);border-radius:12px;padding:4px}
 .tab{flex:1;padding:10px;border:0;border-radius:9px;background:transparent;color:var(--mu);font-weight:600;cursor:pointer}
 .tab.on{background:linear-gradient(135deg,var(--ac),#5a4fcf);color:#fff}
@@ -26,29 +25,29 @@ h1{font-size:1.3rem;margin-bottom:4px}
 .btn.g{background:#122a20;border-color:#1e4a38;color:var(--gn)}
 .btn.r{background:#2a1218;border-color:#5a2030;color:var(--rd)}
 input,textarea{width:100%;background:#0e0e16;border:1px solid var(--bd);border-radius:10px;color:var(--tx);padding:10px 12px;font-size:.9rem;margin-bottom:8px}
-textarea{min-height:140px;font-family:ui-monospace,monospace;font-size:.8rem;resize:vertical}
+textarea{min-height:120px;font-family:ui-monospace,monospace;font-size:.78rem;resize:vertical}
 .ctrl{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin-top:8px}
-.ctrl input[type=number]{width:100px;margin:0}
+.ctrl input[type=number]{width:120px;margin:0}
 .ctrl input[type=range]{flex:1;margin:0;accent-color:var(--ac)}
 .hint{font-size:.75rem;color:var(--mu);margin-bottom:8px;line-height:1.4}
 .stats{display:flex;gap:12px;flex-wrap:wrap;margin-top:10px;padding-top:10px;border-top:1px solid var(--bd);font-size:.8rem;color:var(--mu)}
-.stats b{color:var(--tx)}
-.stats .ok b{color:var(--gn)}
-.log{max-height:280px;overflow:auto;background:#0a0a10;border:1px solid var(--bd);border-radius:10px;padding:10px;font-family:ui-monospace,monospace;font-size:.74rem;line-height:1.45}
+.stats b{color:var(--tx)}.stats .ok b{color:var(--gn)}
+.log{max-height:300px;overflow:auto;background:#0a0a10;border:1px solid var(--bd);border-radius:10px;padding:10px;font-family:ui-monospace,monospace;font-size:.73rem;line-height:1.45}
 .log .ok{color:var(--gn)}.log .bad{color:var(--rd)}.log .warn{color:var(--yl)}.log .info{color:var(--bl)}.log .taken{color:var(--mu)}
 .bar{height:6px;background:#0e0e16;border-radius:4px;margin-top:8px;overflow:hidden}
 .bar>i{display:block;height:100%;width:0;background:linear-gradient(90deg,var(--ac),var(--gn));transition:width .12s}
 .toggle{display:flex;align-items:center;gap:8px;margin-bottom:10px;padding:8px 10px;background:#0e0e16;border-radius:10px;border:1px solid var(--bd);font-size:.85rem}
 .toggle input{width:auto;margin:0}
+.big{font-size:1.6rem;font-weight:700;color:var(--ac);margin:4px 0}
 </style>
 </head>
 <body>
 <div class="wrap">
   <h1>Discord Username Sniper</h1>
-  <p class="sub">Generate names · check live · claim if free · stop anytime</p>
+  <p class="sub">Bulk generate · live check · claim · proxy rotate (rate-limit resistant)</p>
 
   <div class="tabs">
-    <button class="tab on" id="t1" type="button">1 · Setup</button>
+    <button class="tab on" id="t1" type="button">1 · Generate</button>
     <button class="tab" id="t2" type="button">2 · Snipe</button>
   </div>
 
@@ -56,23 +55,26 @@ textarea{min-height:140px;font-family:ui-monospace,monospace;font-size:.8rem;res
     <div class="card">
       <div class="toggle">
         <input type="checkbox" id="stack"/>
-        <label for="stack">Stack mode (pick multiple presets)</label>
+        <label for="stack">Stack mode — multiple presets at once</label>
       </div>
-      <div class="lbl">Short</div>
+      <div class="lbl">Short combos</div>
       <div class="row" id="short"></div>
       <div class="lbl">Patterns</div>
       <div class="row" id="patterns"></div>
-      <div class="lbl">Words</div>
+      <div class="lbl">Wordlists</div>
       <div class="row" id="words"></div>
+      <div class="lbl">How many usernames</div>
+      <p class="hint">Type any number up to <b>50,000</b> (e.g. 15000). Was capped before — fixed.</p>
       <div class="ctrl">
-        <input type="number" id="limit" value="300" min="10" max="5000"/>
+        <input type="number" id="limit" value="1500" min="1" max="50000" step="1"/>
         <button class="btn p" id="gen" type="button">Generate</button>
       </div>
+      <div class="big" id="countBig">0</div>
       <div class="stats">selected <b id="nSel">1</b> · generated <b id="nGen">0</b></div>
     </div>
     <div class="card">
-      <div class="lbl">Names (one per line)</div>
-      <textarea id="names" placeholder="Generate or paste usernames…"></textarea>
+      <div class="lbl">Name list</div>
+      <textarea id="names" placeholder="Generated names appear here…"></textarea>
       <button class="btn p" id="go2" type="button" style="width:100%">Go to Snipe →</button>
     </div>
   </div>
@@ -80,25 +82,22 @@ textarea{min-height:140px;font-family:ui-monospace,monospace;font-size:.8rem;res
   <div class="page" id="p2">
     <div class="card">
       <div class="lbl">Targets</div>
-      <textarea id="targets" placeholder="Names to snipe…"></textarea>
+      <textarea id="targets" placeholder="Usernames to check / claim…"></textarea>
+      <div class="lbl">Proxies (optional — recommended against rate limits)</div>
+      <p class="hint">One per line: <code>ip:port</code> or <code>user:pass@ip:port</code> or <code>http://…</code>. Rotates each request. This is how advanced GitHub snipers avoid Discord 429s.</p>
+      <textarea id="proxies" style="min-height:80px" placeholder="1.2.3.4:8080&#10;user:pass@5.6.7.8:3128"></textarea>
       <div class="lbl">Token / password</div>
-      <p class="hint">Uses Render env if set. Or paste user token + Discord password.</p>
+      <p class="hint">Env vars work if set on Render. Or paste user token + Discord password.</p>
       <input id="token" type="password" placeholder="Discord user token" autocomplete="off"/>
       <input id="pass" type="password" placeholder="Discord password" autocomplete="off"/>
-      <div class="lbl">Requests per second: <b id="rpsL">2</b></div>
-      <div class="ctrl">
-        <input type="range" id="rps" min="1" max="8" value="2" step="1"/>
-      </div>
-      <label class="hint" style="display:flex;align-items:center;gap:8px;margin-top:6px">
-        <input type="checkbox" id="stopClaim" checked style="width:auto;margin:0"/> Stop after first claim
-      </label>
-      <label class="hint" style="display:flex;align-items:center;gap:8px">
-        <input type="checkbox" id="claimOn" checked style="width:auto;margin:0"/> Auto-claim when available
-      </label>
+      <div class="lbl">Speed: <b id="rpsL">2</b> req/s</div>
+      <div class="ctrl"><input type="range" id="rps" min="1" max="10" value="2" step="1"/></div>
+      <label class="hint" style="display:flex;gap:8px;align-items:center"><input type="checkbox" id="claimOn" checked style="width:auto;margin:0"/> Auto-claim when available</label>
+      <label class="hint" style="display:flex;gap:8px;align-items:center"><input type="checkbox" id="stopClaim" checked style="width:auto;margin:0"/> Stop after first claim</label>
       <div class="ctrl">
         <button class="btn g" id="start" type="button">Start</button>
         <button class="btn r" id="stop" type="button" disabled>Stop</button>
-        <button class="btn" id="back" type="button">← Setup</button>
+        <button class="btn" id="back" type="button">← Generate</button>
       </div>
       <div class="bar"><i id="bar"></i></div>
       <div class="stats">
@@ -110,26 +109,27 @@ textarea{min-height:140px;font-family:ui-monospace,monospace;font-size:.8rem;res
       </div>
     </div>
     <div class="card">
+      <div class="lbl">Available hits</div>
+      <textarea id="hits" style="min-height:70px" placeholder="Available names collect here…"></textarea>
       <div class="lbl">Log</div>
       <div class="log" id="log"></div>
     </div>
   </div>
 </div>
-
 <script>
 (function(){
   const short=[['2C','2C'],['2L','2L'],['2N','2N'],['3C','3C'],['3L','3L'],['3N','3N'],['4L','4L'],['4C','4C'],['4N','4N']];
   const patterns=[['Semi3L','Semi'],['Dotted','Dotted'],['Repeaters','_Rep'],['LetterRepeaters','LRep'],['4LPronounceable','4Pron'],['5LPronounceable','5Pron'],['Faces','Faces']];
   const words=[['WordsEN','EN'],['WordsFR','FR']];
   const selected=new Set(['3L']);
-  let stack=false, running=false, stopFlag=false;
+  let stack=false,running=false,stopFlag=false,proxyIdx=0;
 
-  const $ = id => document.getElementById(id);
+  const $=id=>document.getElementById(id);
   function log(m,c){const d=document.createElement('div');if(c)d.className=c;d.textContent='['+new Date().toLocaleTimeString()+'] '+m;$('log').prepend(d)}
   function show(p){
     $('p1').classList.toggle('on',p===1);$('p2').classList.toggle('on',p===2);
     $('t1').classList.toggle('on',p===1);$('t2').classList.toggle('on',p===2);
-    if(p===2 && !$('targets').value.trim() && $('names').value.trim()) $('targets').value=$('names').value;
+    if(p===2&&!$('targets').value.trim()&&$('names').value.trim())$('targets').value=$('names').value;
   }
   $('t1').onclick=()=>show(1);$('t2').onclick=()=>show(2);
   $('go2').onclick=()=>{$('targets').value=$('names').value;show(2)};
@@ -144,123 +144,127 @@ textarea{min-height:140px;font-family:ui-monospace,monospace;font-size:.8rem;res
       const b=document.createElement('button');
       b.type='button';b.className='chip'+(selected.has(id)?' on':'');b.dataset.id=id;b.textContent=label;
       b.onclick=()=>{
-        if(stack){
-          if(selected.has(id)){if(selected.size>1)selected.delete(id)}else selected.add(id);
-        }else{selected.clear();selected.add(id)}
+        if(stack){if(selected.has(id)){if(selected.size>1)selected.delete(id)}else selected.add(id)}
+        else{selected.clear();selected.add(id)}
         paint();
       };
       parent.appendChild(b);
     });
   }
   addChips(short,$('short'));addChips(patterns,$('patterns'));addChips(words,$('words'));paint();
+  $('stack').onchange=e=>{stack=e.target.checked;if(!stack&&selected.size>1){const k=[...selected][0];selected.clear();selected.add(k);paint()}};
+  $('rps').oninput=e=>$('rpsL').textContent=e.target.value;
 
-  $('stack').onchange=e=>{
-    stack=e.target.checked;
-    if(!stack&&selected.size>1){const k=[...selected][0];selected.clear();selected.add(k);paint()}
-  };
-
-  $('rps').oninput=e=>{$('rpsL').textContent=e.target.value};
+  function getProxies(){
+    return $('proxies').value.split(/\n/).map(s=>s.trim()).filter(Boolean);
+  }
+  function nextProxy(list){
+    if(!list.length)return null;
+    const p=list[proxyIdx%list.length];
+    proxyIdx++;
+    return p;
+  }
 
   $('gen').onclick=async()=>{
     if(!selected.size){log('pick a preset','warn');return}
-    const limit=Math.min(5000,Math.max(10,Number($('limit').value)||300));
+    let limit=parseInt($('limit').value,10);
+    if(!Number.isFinite(limit)||limit<1){log('invalid count','bad');return}
+    if(limit>50000){limit=50000;$('limit').value=50000;log('capped at 50000','warn')}
     const presets=[...selected];
     $('gen').disabled=true;
-    log('generate '+presets.join('+')+' x '+limit,'info');
+    log('generating '+presets.join('+')+' × '+limit+'…','info');
     try{
       const r=await fetch('/api/generate',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({presets,limit})}).then(x=>x.json());
       if(!r.ok){log('gen fail: '+(r.error||'?'),'bad');return}
       $('names').value=(r.usernames||[]).join('\n');
       $('nGen').textContent=r.count||0;
-      log('got '+(r.count||0)+' names','ok');
-    }catch(e){log('network: '+e.message,'bad')}
+      $('countBig').textContent=(r.count||0).toLocaleString();
+      if(r.count<limit)log('got '+r.count+' (preset space smaller than requested)','warn');
+      else log('generated '+r.count+' names','ok');
+    }catch(e){log('network: '+e.message+' — if cold start, wait 30s','bad')}
     finally{$('gen').disabled=false}
   };
 
   function sleep(ms){return new Promise(r=>setTimeout(r,ms))}
-
-  $('stop').onclick=()=>{stopFlag=true;log('STOP pressed','warn')};
+  $('stop').onclick=()=>{stopFlag=true;log('STOP','warn')};
 
   $('start').onclick=async()=>{
     if(running)return;
     const list=$('targets').value.split(/\n/).map(s=>s.trim()).filter(Boolean);
-    if(!list.length){log('no names — generate first','warn');return}
-
-    let token=$('token').value.trim();
-    let pass=$('pass').value;
+    if(!list.length){log('no targets','warn');return}
+    const token=$('token').value.trim();
+    const pass=$('pass').value;
+    const proxies=getProxies();
     try{
       const st=await fetch('/api/status').then(x=>x.json());
-      if(!token&&!st.hasEnvToken){log('need token (paste or DISCORD_TOKEN env)','bad');return}
-      if($('claimOn').checked&&!pass&&!st.hasEnvPassword){log('need password for claim (or DISCORD_PASSWORD env)','bad');return}
+      if(!token&&!st.hasEnvToken){log('need token','bad');return}
+      if($('claimOn').checked&&!pass&&!st.hasEnvPassword){log('need password for claim','bad');return}
     }catch(_){}
+    if(!proxies.length)log('no proxies — Discord may rate-limit this server IP','warn');
+    else log(proxies.length+' proxies loaded','info');
 
-    running=true;stopFlag=false;
+    running=true;stopFlag=false;proxyIdx=0;
     $('start').disabled=true;$('stop').disabled=false;
     let av=0,cl=0,tk=0,er=0;
     $('nAv').textContent=0;$('nCl').textContent=0;$('nTk').textContent=0;$('nEr').textContent=0;
-    const rps=Math.max(1,Math.min(8,Number($('rps').value)||2));
+    const rps=Math.max(1,Math.min(10,Number($('rps').value)||2));
     const delay=Math.round(1000/rps);
-    const doClaim=$('claimOn').checked;
-    const stopOnClaim=$('stopClaim').checked;
-    log('START '+list.length+' names @ '+rps+' rps'+(doClaim?' +claim':''),'info');
+    const doClaim=$('claimOn').checked,stopOnClaim=$('stopClaim').checked;
+    log('START '+list.length+' @ '+rps+' rps','info');
 
     for(let i=0;i<list.length;i++){
       if(stopFlag){log('stopped '+i+'/'+list.length,'warn');break}
       const u=list[i].toLowerCase();
       $('prog').textContent=(i+1)+'/'+list.length;
       $('bar').style.width=Math.round(((i+1)/list.length)*100)+'%';
+      const proxy=nextProxy(proxies);
 
       try{
-        const body={username:u};if(token)body.token=token;
+        const body={username:u};if(token)body.token=token;if(proxy)body.proxy=proxy;
         const cr=await fetch('/api/check-one',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)}).then(x=>x.json());
-        if(!cr.ok){er++;log('api error @'+u+' '+(cr.error||''),'bad')}
+        if(!cr.ok){er++;log('api @'+u+' '+(cr.error||''),'bad')}
         else{
           const s=cr.result||{};
           if(s.status==='available'){
             av++;$('nAv').textContent=av;
-            log('AVAILABLE @'+u+(s.method?' ('+s.method+')':''),'ok');
+            $('hits').value=($('hits').value?$('hits').value+'\n':'')+u;
+            log('AVAILABLE @'+u,'ok');
             if(doClaim){
-              const cb={username:u};if(token)cb.token=token;if(pass)cb.password=pass;
+              const cb={username:u};if(token)cb.token=token;if(pass)cb.password=pass;if(proxy)cb.proxy=proxy;
               const clres=await fetch('/api/claim',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(cb)}).then(x=>x.json());
-              if(clres.ok){
-                cl++;$('nCl').textContent=cl;
-                log('CLAIMED @'+u,'ok');
-                if(stopOnClaim){log('stop after claim','info');break}
-              }else{
-                er++;
-                const msg=clres.claim?.message||clres.check?.status||clres.error||'claim failed';
-                log('claim fail @'+u+' — '+msg,'bad');
-              }
+              if(clres.ok){cl++;$('nCl').textContent=cl;log('CLAIMED @'+u,'ok');if(stopOnClaim)break}
+              else{er++;log('claim fail @'+u+' — '+(clres.claim?.message||clres.error||'?'),'bad')}
             }
           }else if(s.status==='taken'){
             tk++;$('nTk').textContent=tk;
-            if(tk%25===1)log('taken @'+u+' (and counting)','taken');
+            if(tk%50===1)log('taken @'+u+' (+counting)','taken');
           }else if(s.status==='invalid'){
             er++;log('invalid @'+u+' '+(s.reason||''),'warn');
           }else{
             er++;
             const ra=s.retryAfter;
-            log((s.reason||s.status||'error')+' @'+u+(ra?' — wait '+Math.ceil(ra)+'s':''),'bad');
-            if(ra&&ra>0){
-              const wait=Math.min(Math.ceil(Number(ra)),120);
-              log('sleeping '+wait+'s for rate limit…','warn');
+            log((s.reason||'error')+' @'+u+(proxy?' via proxy':''),'bad');
+            if(ra&&!proxies.length){
+              const wait=Math.min(Math.ceil(Number(ra)),90);
+              log('no proxies — sleep '+wait+'s','warn');
               for(let w=0;w<wait&&!stopFlag;w++)await sleep(1000);
+            }else if(ra&&proxies.length){
+              log('rate limit — rotating proxy','warn');
             }
           }
         }
-      }catch(e){er++;log('network @'+u+' '+e.message,'bad')}
+      }catch(e){er++;log('net @'+u+' '+e.message,'bad')}
       $('nEr').textContent=er;
       if(i<list.length-1&&!stopFlag)await sleep(delay);
     }
-
     running=false;$('start').disabled=false;$('stop').disabled=true;
     log('DONE avail='+av+' claimed='+cl+' taken='+tk+' err='+er,'info');
   };
 
   fetch('/api/status').then(r=>r.json()).then(s=>{
-    if(s.hasEnvToken)log('env token OK','info');else log('no env token — paste on Snipe page','warn');
-    if(s.hasEnvPassword)log('env password OK','info');else log('no env password — paste for claim','warn');
-  }).catch(()=>log('status fail — site waking?','warn'));
+    if(s.hasEnvToken)log('env token OK','info');else log('paste token on Snipe page','warn');
+    if(s.hasEnvPassword)log('env password OK','info');
+  }).catch(()=>log('status fail — cold start?','warn'));
 })();
 </script>
 </body>
