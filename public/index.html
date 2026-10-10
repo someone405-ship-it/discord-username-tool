@@ -9,7 +9,7 @@
 *{box-sizing:border-box;margin:0;padding:0}
 body{font-family:system-ui,-apple-system,sans-serif;background:radial-gradient(900px 420px at 50% -12%,#1a1635,var(--bg));color:var(--tx);min-height:100vh;padding:16px}
 .wrap{max-width:720px;margin:0 auto}
-h1{font-size:1.35rem} .sub{color:var(--mu);font-size:.85rem;margin:4px 0 14px}
+h1{font-size:1.35rem}.sub{color:var(--mu);font-size:.85rem;margin:4px 0 14px}
 .tabs{display:flex;gap:6px;margin-bottom:12px;background:#101018;border:1px solid var(--bd);border-radius:12px;padding:4px}
 .tab{flex:1;padding:10px;border:0;border-radius:9px;background:transparent;color:var(--mu);font-weight:600;cursor:pointer}
 .tab.on{background:linear-gradient(135deg,var(--ac),#5a4fcf);color:#fff}
@@ -35,7 +35,7 @@ textarea{min-height:120px;font-family:ui-monospace,monospace;font-size:.78rem;re
 .log{max-height:300px;overflow:auto;background:#0a0a10;border:1px solid var(--bd);border-radius:10px;padding:10px;font-family:ui-monospace,monospace;font-size:.73rem;line-height:1.45}
 .log .ok{color:var(--gn)}.log .bad{color:var(--rd)}.log .warn{color:var(--yl)}.log .info{color:var(--bl)}.log .taken{color:var(--mu)}
 .bar{height:6px;background:#0e0e16;border-radius:4px;margin-top:8px;overflow:hidden}
-.bar>i{display:block;height:100%;width:0;background:linear-gradient(90deg,var(--ac),var(--gn));transition:width .12s}
+.bar>i{display:block;height:100%;width:0;background:linear-gradient(90deg,var(--ac),var(--gn));transition:width .1s}
 .toggle{display:flex;align-items:center;gap:8px;margin-bottom:10px;padding:8px 10px;background:#0e0e16;border-radius:10px;border:1px solid var(--bd);font-size:.85rem}
 .toggle input{width:auto;margin:0}
 .big{font-size:1.6rem;font-weight:700;color:var(--ac);margin:4px 0}
@@ -44,7 +44,7 @@ textarea{min-height:120px;font-family:ui-monospace,monospace;font-size:.78rem;re
 <body>
 <div class="wrap">
   <h1>Discord Username Sniper</h1>
-  <p class="sub">Bulk generate · live check · claim · proxy rotate (rate-limit resistant)</p>
+  <p class="sub">Parallel workers · multi-proxy rotate · bulk generate · claim</p>
 
   <div class="tabs">
     <button class="tab on" id="t1" type="button">1 · Generate</button>
@@ -55,18 +55,17 @@ textarea{min-height:120px;font-family:ui-monospace,monospace;font-size:.78rem;re
     <div class="card">
       <div class="toggle">
         <input type="checkbox" id="stack"/>
-        <label for="stack">Stack mode — multiple presets at once</label>
+        <label for="stack">Stack mode — multiple presets</label>
       </div>
-      <div class="lbl">Short combos</div>
+      <div class="lbl">Short</div>
       <div class="row" id="short"></div>
       <div class="lbl">Patterns</div>
       <div class="row" id="patterns"></div>
-      <div class="lbl">Wordlists</div>
+      <div class="lbl">Words</div>
       <div class="row" id="words"></div>
-      <div class="lbl">How many usernames</div>
-      <p class="hint">Type any number up to <b>50,000</b> (e.g. 15000). Was capped before — fixed.</p>
+      <div class="lbl">How many (max 50,000)</div>
       <div class="ctrl">
-        <input type="number" id="limit" value="1500" min="1" max="50000" step="1"/>
+        <input type="number" id="limit" value="1500" min="1" max="50000"/>
         <button class="btn p" id="gen" type="button">Generate</button>
       </div>
       <div class="big" id="countBig">0</div>
@@ -74,7 +73,7 @@ textarea{min-height:120px;font-family:ui-monospace,monospace;font-size:.78rem;re
     </div>
     <div class="card">
       <div class="lbl">Name list</div>
-      <textarea id="names" placeholder="Generated names appear here…"></textarea>
+      <textarea id="names" placeholder="Generated names…"></textarea>
       <button class="btn p" id="go2" type="button" style="width:100%">Go to Snipe →</button>
     </div>
   </div>
@@ -82,16 +81,17 @@ textarea{min-height:120px;font-family:ui-monospace,monospace;font-size:.78rem;re
   <div class="page" id="p2">
     <div class="card">
       <div class="lbl">Targets</div>
-      <textarea id="targets" placeholder="Usernames to check / claim…"></textarea>
-      <div class="lbl">Proxies (optional — recommended against rate limits)</div>
-      <p class="hint">One per line: <code>ip:port</code> or <code>user:pass@ip:port</code> or <code>http://…</code>. Rotates each request. This is how advanced GitHub snipers avoid Discord 429s.</p>
-      <textarea id="proxies" style="min-height:80px" placeholder="1.2.3.4:8080&#10;user:pass@5.6.7.8:3128"></textarea>
+      <textarea id="targets" placeholder="Usernames…"></textarea>
+      <div class="lbl">Proxies (multiple — one per line)</div>
+      <p class="hint">Formats: <code>ip:port</code> · <code>user:pass@ip:port</code> · <code>http://…</code><br/>Each concurrent worker picks the next proxy (round-robin). More proxies = fewer 429s.</p>
+      <textarea id="proxies" style="min-height:90px" placeholder="1.2.3.4:8080&#10;5.6.7.8:3128&#10;user:pass@9.9.9.9:8000"></textarea>
       <div class="lbl">Token / password</div>
-      <p class="hint">Env vars work if set on Render. Or paste user token + Discord password.</p>
+      <p class="hint">Render env works if set. Or paste user token + Discord password.</p>
       <input id="token" type="password" placeholder="Discord user token" autocomplete="off"/>
       <input id="pass" type="password" placeholder="Discord password" autocomplete="off"/>
-      <div class="lbl">Speed: <b id="rpsL">2</b> req/s</div>
-      <div class="ctrl"><input type="range" id="rps" min="1" max="10" value="2" step="1"/></div>
+      <div class="lbl">Parallel workers: <b id="rpsL">3</b> (same time scans)</div>
+      <p class="hint">3 = 3 usernames checked at once. Higher = faster, needs more proxies.</p>
+      <div class="ctrl"><input type="range" id="rps" min="1" max="15" value="3" step="1"/></div>
       <label class="hint" style="display:flex;gap:8px;align-items:center"><input type="checkbox" id="claimOn" checked style="width:auto;margin:0"/> Auto-claim when available</label>
       <label class="hint" style="display:flex;gap:8px;align-items:center"><input type="checkbox" id="stopClaim" checked style="width:auto;margin:0"/> Stop after first claim</label>
       <div class="ctrl">
@@ -102,6 +102,7 @@ textarea{min-height:120px;font-family:ui-monospace,monospace;font-size:.78rem;re
       <div class="bar"><i id="bar"></i></div>
       <div class="stats">
         <span>prog <b id="prog">0/0</b></span>
+        <span>workers <b id="nWk">0</b></span>
         <span class="ok">avail <b id="nAv">0</b></span>
         <span class="ok">claimed <b id="nCl">0</b></span>
         <span>taken <b id="nTk">0</b></span>
@@ -110,7 +111,7 @@ textarea{min-height:120px;font-family:ui-monospace,monospace;font-size:.78rem;re
     </div>
     <div class="card">
       <div class="lbl">Available hits</div>
-      <textarea id="hits" style="min-height:70px" placeholder="Available names collect here…"></textarea>
+      <textarea id="hits" style="min-height:70px" placeholder="Hits…"></textarea>
       <div class="lbl">Log</div>
       <div class="log" id="log"></div>
     </div>
@@ -122,7 +123,7 @@ textarea{min-height:120px;font-family:ui-monospace,monospace;font-size:.78rem;re
   const patterns=[['Semi3L','Semi'],['Dotted','Dotted'],['Repeaters','_Rep'],['LetterRepeaters','LRep'],['4LPronounceable','4Pron'],['5LPronounceable','5Pron'],['Faces','Faces']];
   const words=[['WordsEN','EN'],['WordsFR','FR']];
   const selected=new Set(['3L']);
-  let stack=false,running=false,stopFlag=false,proxyIdx=0;
+  let stack=false,running=false,stopFlag=false,proxyIdx=0,claimedLock=false;
 
   const $=id=>document.getElementById(id);
   function log(m,c){const d=document.createElement('div');if(c)d.className=c;d.textContent='['+new Date().toLocaleTimeString()+'] '+m;$('log').prepend(d)}
@@ -166,31 +167,29 @@ textarea{min-height:120px;font-family:ui-monospace,monospace;font-size:.78rem;re
   }
 
   $('gen').onclick=async()=>{
-    if(!selected.size){log('pick a preset','warn');return}
+    if(!selected.size){log('pick preset','warn');return}
     let limit=parseInt($('limit').value,10);
-    if(!Number.isFinite(limit)||limit<1){log('invalid count','bad');return}
-    if(limit>50000){limit=50000;$('limit').value=50000;log('capped at 50000','warn')}
+    if(!Number.isFinite(limit)||limit<1){log('bad count','bad');return}
+    if(limit>50000){limit=50000;$('limit').value=50000}
     const presets=[...selected];
     $('gen').disabled=true;
-    log('generating '+presets.join('+')+' × '+limit+'…','info');
+    log('gen '+presets.join('+')+' × '+limit,'info');
     try{
       const r=await fetch('/api/generate',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({presets,limit})}).then(x=>x.json());
-      if(!r.ok){log('gen fail: '+(r.error||'?'),'bad');return}
+      if(!r.ok){log('gen fail '+(r.error||''),'bad');return}
       $('names').value=(r.usernames||[]).join('\n');
       $('nGen').textContent=r.count||0;
       $('countBig').textContent=(r.count||0).toLocaleString();
-      if(r.count<limit)log('got '+r.count+' (preset space smaller than requested)','warn');
-      else log('generated '+r.count+' names','ok');
-    }catch(e){log('network: '+e.message+' — if cold start, wait 30s','bad')}
+      log('got '+(r.count||0),'ok');
+    }catch(e){log('net '+e.message,'bad')}
     finally{$('gen').disabled=false}
   };
 
-  function sleep(ms){return new Promise(r=>setTimeout(r,ms))}
   $('stop').onclick=()=>{stopFlag=true;log('STOP','warn')};
 
   $('start').onclick=async()=>{
     if(running)return;
-    const list=$('targets').value.split(/\n/).map(s=>s.trim()).filter(Boolean);
+    const list=$('targets').value.split(/\n/).map(s=>s.trim().toLowerCase()).filter(Boolean);
     if(!list.length){log('no targets','warn');return}
     const token=$('token').value.trim();
     const pass=$('pass').value;
@@ -198,73 +197,99 @@ textarea{min-height:120px;font-family:ui-monospace,monospace;font-size:.78rem;re
     try{
       const st=await fetch('/api/status').then(x=>x.json());
       if(!token&&!st.hasEnvToken){log('need token','bad');return}
-      if($('claimOn').checked&&!pass&&!st.hasEnvPassword){log('need password for claim','bad');return}
+      if($('claimOn').checked&&!pass&&!st.hasEnvPassword){log('need password','bad');return}
     }catch(_){}
-    if(!proxies.length)log('no proxies — Discord may rate-limit this server IP','warn');
-    else log(proxies.length+' proxies loaded','info');
 
-    running=true;stopFlag=false;proxyIdx=0;
+    const workers=Math.max(1,Math.min(15,Number($('rps').value)||3));
+    const doClaim=$('claimOn').checked;
+    const stopOnClaim=$('stopClaim').checked;
+
+    if(!proxies.length)log('no proxies — keep workers low (1-3) or Discord 429s hard','warn');
+    else log(proxies.length+' proxies · '+workers+' parallel workers','info');
+
+    running=true;stopFlag=false;proxyIdx=0;claimedLock=false;
     $('start').disabled=true;$('stop').disabled=false;
-    let av=0,cl=0,tk=0,er=0;
+    $('nWk').textContent=workers;
+
+    let done=0,av=0,cl=0,tk=0,er=0;
+    const total=list.length;
+    let cursor=0;
     $('nAv').textContent=0;$('nCl').textContent=0;$('nTk').textContent=0;$('nEr').textContent=0;
-    const rps=Math.max(1,Math.min(10,Number($('rps').value)||2));
-    const delay=Math.round(1000/rps);
-    const doClaim=$('claimOn').checked,stopOnClaim=$('stopClaim').checked;
-    log('START '+list.length+' @ '+rps+' rps','info');
+    $('prog').textContent='0/'+total;
+    $('bar').style.width='0%';
+    log('START '+total+' names · '+workers+' concurrent','info');
 
-    for(let i=0;i<list.length;i++){
-      if(stopFlag){log('stopped '+i+'/'+list.length,'warn');break}
-      const u=list[i].toLowerCase();
-      $('prog').textContent=(i+1)+'/'+list.length;
-      $('bar').style.width=Math.round(((i+1)/list.length)*100)+'%';
+    function updateProg(){
+      $('prog').textContent=done+'/'+total;
+      $('bar').style.width=Math.round((done/total)*100)+'%';
+      $('nAv').textContent=av;$('nCl').textContent=cl;$('nTk').textContent=tk;$('nEr').textContent=er;
+    }
+
+    async function processOne(u){
+      if(stopFlag||claimedLock)return;
       const proxy=nextProxy(proxies);
-
       try{
         const body={username:u};if(token)body.token=token;if(proxy)body.proxy=proxy;
         const cr=await fetch('/api/check-one',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)}).then(x=>x.json());
-        if(!cr.ok){er++;log('api @'+u+' '+(cr.error||''),'bad')}
-        else{
-          const s=cr.result||{};
-          if(s.status==='available'){
-            av++;$('nAv').textContent=av;
-            $('hits').value=($('hits').value?$('hits').value+'\n':'')+u;
-            log('AVAILABLE @'+u,'ok');
-            if(doClaim){
-              const cb={username:u};if(token)cb.token=token;if(pass)cb.password=pass;if(proxy)cb.proxy=proxy;
-              const clres=await fetch('/api/claim',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(cb)}).then(x=>x.json());
-              if(clres.ok){cl++;$('nCl').textContent=cl;log('CLAIMED @'+u,'ok');if(stopOnClaim)break}
-              else{er++;log('claim fail @'+u+' — '+(clres.claim?.message||clres.error||'?'),'bad')}
-            }
-          }else if(s.status==='taken'){
-            tk++;$('nTk').textContent=tk;
-            if(tk%50===1)log('taken @'+u+' (+counting)','taken');
-          }else if(s.status==='invalid'){
-            er++;log('invalid @'+u+' '+(s.reason||''),'warn');
-          }else{
-            er++;
-            const ra=s.retryAfter;
-            log((s.reason||'error')+' @'+u+(proxy?' via proxy':''),'bad');
-            if(ra&&!proxies.length){
-              const wait=Math.min(Math.ceil(Number(ra)),90);
-              log('no proxies — sleep '+wait+'s','warn');
-              for(let w=0;w<wait&&!stopFlag;w++)await sleep(1000);
-            }else if(ra&&proxies.length){
-              log('rate limit — rotating proxy','warn');
+        if(stopFlag||claimedLock)return;
+        if(!cr.ok){er++;log('api @'+u+' '+(cr.error||''),'bad');return}
+        const s=cr.result||{};
+        if(s.status==='available'){
+          av++;
+          $('hits').value=($('hits').value?$('hits').value+'\n':'')+u;
+          log('AVAILABLE @'+u,'ok');
+          if(doClaim&&!claimedLock){
+            const cb={username:u};if(token)cb.token=token;if(pass)cb.password=pass;if(proxy)cb.proxy=proxy;
+            const clres=await fetch('/api/claim',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(cb)}).then(x=>x.json());
+            if(clres.ok){
+              cl++;log('CLAIMED @'+u,'ok');
+              if(stopOnClaim){claimedLock=true;stopFlag=true;log('stop after claim','info')}
+            }else{
+              er++;log('claim fail @'+u+' — '+(clres.claim?.message||clres.error||'?'),'bad');
             }
           }
+        }else if(s.status==='taken'){
+          tk++;
+          if(tk%40===1)log('taken stream… @'+u,'taken');
+        }else if(s.status==='invalid'){
+          er++;log('invalid @'+u,'warn');
+        }else{
+          er++;
+          log((s.reason||'error')+' @'+u+(proxy?' [proxy]':''),'bad');
+          if(s.retryAfter&&!proxies.length){
+            const w=Math.min(Math.ceil(Number(s.retryAfter)),30);
+            await new Promise(r=>setTimeout(r,w*1000));
+          }
         }
-      }catch(e){er++;log('net @'+u+' '+e.message,'bad')}
-      $('nEr').textContent=er;
-      if(i<list.length-1&&!stopFlag)await sleep(delay);
+      }catch(e){
+        er++;log('net @'+u+' '+e.message,'bad');
+      }finally{
+        done++;
+        updateProg();
+      }
     }
-    running=false;$('start').disabled=false;$('stop').disabled=true;
+
+    async function worker(){
+      while(!stopFlag&&!claimedLock){
+        const i=cursor++;
+        if(i>=total)break;
+        await processOne(list[i]);
+      }
+    }
+
+    const pool=[];
+    for(let w=0;w<workers;w++)pool.push(worker());
+    await Promise.all(pool);
+
+    running=false;
+    $('start').disabled=false;$('stop').disabled=true;$('nWk').textContent='0';
     log('DONE avail='+av+' claimed='+cl+' taken='+tk+' err='+er,'info');
   };
 
   fetch('/api/status').then(r=>r.json()).then(s=>{
-    if(s.hasEnvToken)log('env token OK','info');else log('paste token on Snipe page','warn');
+    if(s.hasEnvToken)log('env token OK','info');else log('paste token on Snipe','warn');
     if(s.hasEnvPassword)log('env password OK','info');
-  }).catch(()=>log('status fail — cold start?','warn'));
+  }).catch(()=>log('status fail','warn'));
 })();
 </script>
 </body>
