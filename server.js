@@ -3,6 +3,7 @@ import fs from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';
 import { checkUsername, checkMany } from './utils/check.js';
+import { claimUsername } from './utils/claim.js';
 import { generate, PRESET_NAMES } from './utils/generator.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
@@ -10,32 +11,35 @@ const config = JSON.parse(fs.readFileSync(path.join(__dirname, 'config.json'), '
 const app = express();
 
 const ENV_TOKEN = (process.env.DISCORD_TOKEN || process.env.TOKEN || '').trim() || null;
+const ENV_PASSWORD = (process.env.DISCORD_PASSWORD || process.env.PASSWORD || '').trim() || null;
 
 app.use(express.json({ limit: '2mb' }));
 app.use(express.static(path.join(__dirname, 'public')));
 
-app.get('/api/presets', (_req, res) => {
-  res.json({ presets: PRESET_NAMES });
-});
-
+app.get('/api/presets', (_req, res) => res.json({ presets: PRESET_NAMES }));
 app.get('/api/status', (_req, res) => {
-  res.json({ ok: true, hasEnvToken: Boolean(ENV_TOKEN) });
+  res.json({ ok: true, hasEnvToken: Boolean(ENV_TOKEN), hasEnvPassword: Boolean(ENV_PASSWORD) });
 });
 
 app.post('/api/generate', (req, res) => {
   try {
     const body = req.body || {};
     let presets = body.presets;
-    if (!presets || !Array.isArray(presets) || !presets.length) {
+    if (!Array.isArray(presets) || !presets.length) {
       presets = [body.preset || '3L'];
     }
     presets = [...new Set(presets.map((p) => String(p).trim()).filter(Boolean))];
-    const limit = Math.min(Math.max(parseInt(body.limit, 10) || 1000, 1), 50000);
+    const limit = Math.min(Math.max(parseInt(body.limit, 10) || 500, 1), 10000);
     const per = Math.max(1, Math.ceil(limit / presets.length));
     const all = [];
     const seen = new Set();
     for (const p of presets) {
-      const list = generate(p, per);
+      let list;
+      try {
+        list = generate(p, per);
+      } catch (err) {
+        return res.status(400).json({ ok: false, error: err.message, preset: p });
+      }
       for (const u of list) {
         if (!seen.has(u)) {
           seen.add(u);
@@ -54,44 +58,64 @@ app.post('/api/generate', (req, res) => {
   }
 });
 
-function resolveToken(bodyToken) {
-  const t = (bodyToken || '').trim();
-  return t || ENV_TOKEN || null;
+function resolveToken(t) {
+  return ((t || '').trim() || ENV_TOKEN || null);
+}
+function resolvePassword(p) {
+  if (p != null && String(p).trim()) return String(p);
+  return ENV_PASSWORD || null;
 }
 
-app.post('/api/check', async (req, res) => {
+app.post('/api/snipe', async (req, res) => {
   try {
-    const { usernames = [], token = null, rps = 5, mode = 'fixed' } = req.body || {};
+    const { usernames = [], token, password, rps = 3, stopOnClaim = true } = req.body || {};
+    const resolvedToken = resolveToken(token);
+    const resolvedPassword = resolvePassword(password);
     if (!Array.isArray(usernames) || !usernames.length) {
       return res.status(400).json({ ok: false, error: 'usernames array required' });
     }
-    const capped = usernames.map((u) => String(u).trim()).filter(Boolean).slice(0, 500);
-    const safeRps = Math.min(20, Math.max(1, Number(rps) || 5));
-    const safeMode = mode === 'auto' ? 'auto' : 'fixed';
-    const results = await checkMany(capped, {
-      token: resolveToken(token),
-      rps: safeRps,
-      mode: safeMode,
-      concurrency: 1
-    });
-    const summary = {
-      available: results.filter((r) => r.status === 'available').length,
-      taken: results.filter((r) => r.status === 'taken').length,
-      invalid: results.filter((r) => r.status === 'invalid').length,
-      error: results.filter((r) => r.status === 'error').length
-    };
-    res.json({ ok: true, summary, results, rps: safeRps, mode: safeMode });
-  } catch (e) {
-    res.status(500).json({ ok: false, error: e.message });
-  }
-});
+    if (!resolvedToken) {
+      return res.status(400).json({ ok: false, error: 'token required — set DISCORD_TOKEN on Render or paste in UI' });
+    }
+    if (!resolvedPassword) {
+      return res.status(400).json({ ok: false, error: 'password required — set DISCORD_PASSWORD on Render or paste in UI' });
+    }
 
-app.post('/api/check-one', async (req, res) => {
-  try {
-    const { username, token = null } = req.body || {};
-    if (!username) return res.status(400).json({ ok: false, error: 'username required' });
-    const result = await checkUsername(username, resolveToken(token));
-    res.json({ ok: true, result });
+    const list = usernames.map((u) => String(u).trim().toLowerCase()).filter(Boolean).slice(0, 200);
+    const safeRps = Math.min(10, Math.max(1, Number(rps) || 3));
+    const delayMs = Math.max(100, Math.round(1000 / safeRps));
+    const results = [];
+    let claimed = null;
+
+    for (const username of list) {
+      const check = await checkUsername(username, resolvedToken);
+      if (check.status === 'available') {
+        const claim = await claimUsername(username, resolvedToken, resolvedPassword);
+        const row = { username, status: claim.success ? 'claimed' : 'claim_failed', check, claim };
+        results.push(row);
+        if (claim.success) {
+          claimed = username;
+          if (stopOnClaim) break;
+        }
+      } else {
+        results.push({ username, status: check.status, check });
+      }
+      await new Promise((r) => setTimeout(r, delayMs));
+    }
+
+    res.json({
+      ok: true,
+      claimed,
+      summary: {
+        claimed: results.filter((r) => r.status === 'claimed').length,
+        available_failed: results.filter((r) => r.status === 'claim_failed').length,
+        taken: results.filter((r) => r.status === 'taken').length,
+        invalid: results.filter((r) => r.status === 'invalid').length,
+        error: results.filter((r) => r.status === 'error').length,
+        checked: results.length
+      },
+      results
+    });
   } catch (e) {
     res.status(500).json({ ok: false, error: e.message });
   }
@@ -99,6 +123,6 @@ app.post('/api/check-one', async (req, res) => {
 
 const port = process.env.PORT || config.webPort || 3847;
 app.listen(port, () => {
-  console.log(`Discord Username Tool → http://localhost:${port}`);
-  console.log(`Env token: ${ENV_TOKEN ? 'set' : 'not set'}`);
+  console.log(`Discord Username Sniper → http://localhost:${port}`);
+  console.log(`Env token: ${ENV_TOKEN ? 'set' : 'not set'} | password: ${ENV_PASSWORD ? 'set' : 'not set'}`);
 });

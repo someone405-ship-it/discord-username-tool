@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
-  <title>Discord Username Tool</title>
+  <title>Discord Username Sniper</title>
   <style>
     :root {
       --bg: #0b0b10; --card: #14141c; --border: #262636; --text: #f0f0f8;
@@ -17,8 +17,8 @@
       color: var(--text); min-height: 100vh; padding: 16px 12px 40px;
     }
     .wrap { max-width: 720px; margin: 0 auto; }
-    h1 { font-size: 1.4rem; font-weight: 700; letter-spacing: -0.02em; }
-    .sub { color: var(--muted); font-size: 0.85rem; margin: 4px 0 16px; }
+    h1 { font-size: 1.35rem; font-weight: 700; }
+    .sub { color: var(--muted); font-size: 0.85rem; margin: 4px 0 14px; }
     .tabs {
       display: flex; gap: 6px; margin-bottom: 14px;
       background: #101018; border: 1px solid var(--border); border-radius: 14px; padding: 5px;
@@ -46,45 +46,39 @@
     .chip {
       border: 1px solid var(--border); background: #1c1c28; color: var(--text);
       padding: 8px 12px; border-radius: 10px; font-size: 0.8rem; font-weight: 500;
-      cursor: pointer; user-select: none; transition: .12s;
+      cursor: pointer; user-select: none;
     }
-    .chip:hover { border-color: var(--accent2); }
     .chip.on {
       background: linear-gradient(135deg, var(--accent), #5a4fcf);
       border-color: transparent; color: #fff;
-      box-shadow: 0 3px 12px rgba(108,92,231,.3);
     }
     .btn {
       border: 1px solid var(--border); background: #1c1c28; color: var(--text);
       padding: 10px 14px; border-radius: 11px; font-size: 0.85rem; font-weight: 600;
-      cursor: pointer; transition: .12s;
+      cursor: pointer;
     }
-    .btn:hover { border-color: var(--accent2); background: #242436; }
     .btn.primary {
       background: linear-gradient(135deg, var(--accent), #5a4fcf);
       border-color: transparent; color: #fff;
     }
     .btn.green { border-color: #1e4a38; color: var(--green); background: #122a20; }
     .btn.ghost { background: transparent; color: var(--muted); }
+    .btn:disabled { opacity: 0.45; cursor: not-allowed; }
     input, textarea {
       width: 100%; background: #0e0e16; border: 1px solid var(--border);
       border-radius: 12px; color: var(--text); padding: 11px 13px;
       font-size: 0.9rem; outline: none; margin-bottom: 8px;
     }
-    input:focus, textarea:focus { border-color: var(--accent); }
     textarea {
-      min-height: 180px; font-family: ui-monospace, Menlo, Consolas, monospace;
+      min-height: 160px; font-family: ui-monospace, Menlo, Consolas, monospace;
       font-size: 0.8rem; line-height: 1.45; resize: vertical;
     }
     .controls { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; margin-top: 10px; }
     .controls input[type=number] { width: 110px; margin: 0; }
-    .stats {
-      display: flex; gap: 14px; flex-wrap: wrap; margin-top: 12px; padding-top: 12px;
-      border-top: 1px solid var(--border);
-    }
+    .stats { display: flex; gap: 14px; flex-wrap: wrap; margin-top: 12px; padding-top: 12px; border-top: 1px solid var(--border); }
     .stat { font-size: 0.8rem; color: var(--muted); }
-    .stat b { color: var(--text); font-weight: 600; }
-    .stat.avail b { color: var(--green); }
+    .stat b { color: var(--text); }
+    .stat.ok b { color: var(--green); }
     .log {
       max-height: 280px; overflow-y: auto;
       font-family: ui-monospace, Menlo, Consolas, monospace; font-size: 0.76rem;
@@ -94,9 +88,13 @@
     .log .ok { color: var(--green); } .log .taken { color: var(--muted); }
     .log .bad { color: var(--red); } .log .warn { color: var(--yellow); }
     .log .info { color: var(--blue); }
-    .single { display: flex; gap: 8px; }
-    .single input { flex: 1; margin: 0; }
     .hint { font-size: 0.75rem; color: var(--muted); margin-bottom: 10px; line-height: 1.45; }
+    .toggle-row {
+      display: flex; align-items: center; gap: 10px; margin-bottom: 12px;
+      padding: 10px 12px; background: #0e0e16; border-radius: 12px; border: 1px solid var(--border);
+    }
+    .toggle-row label { font-size: 0.85rem; font-weight: 600; cursor: pointer; flex: 1; }
+    .toggle-row input { width: auto; margin: 0; }
     .stack-badge {
       display: inline-block; background: #1e1a3a; border: 1px solid #3d3580;
       color: var(--accent2); font-size: 0.72rem; padding: 3px 8px; border-radius: 8px;
@@ -107,18 +105,21 @@
 </head>
 <body>
   <div class="wrap">
-    <h1>Discord Username Tool</h1>
-    <p class="sub">Setup names · check live · no auto claim</p>
+    <h1>Discord Username Sniper</h1>
+    <p class="sub">Generate · snipe available names with your token</p>
 
     <div class="tabs">
       <button class="tab active" data-page="setup" id="tabSetup">1 · Setup</button>
-      <button class="tab" data-page="start" id="tabStart">2 · Start</button>
+      <button class="tab" data-page="snipe" id="tabSnipe">2 · Snipe</button>
     </div>
 
     <div class="page active" id="page-setup">
       <div class="card">
-        <div class="section-label">Stack presets (tap multiple)</div>
-        <p class="hint">Select one or more types — e.g. 2L + 3L + Dotted. They merge into one list.</p>
+        <div class="toggle-row">
+          <input type="checkbox" id="stackMode" />
+          <label for="stackMode">Stack mode — select multiple presets (2L + 3L + …)</label>
+        </div>
+        <div class="section-label">Presets</div>
         <div class="section-label">Short</div>
         <div class="row" id="shortBtns"></div>
         <div class="section-label">Patterns</div>
@@ -127,52 +128,46 @@
         <div class="row" id="wordBtns"></div>
         <div id="stackPreview" style="margin-top:6px;min-height:24px"></div>
         <div class="controls">
-          <input id="limit" type="number" value="1500" min="10" max="50000" title="Max names" />
-          <button class="btn primary" id="btnGen">Generate stack</button>
-          <button class="btn ghost" id="btnClearSel">Clear selection</button>
+          <input id="limit" type="number" value="500" min="10" max="10000" title="How many names" />
+          <button class="btn primary" id="btnGen">Generate</button>
         </div>
         <div class="stats">
-          <span class="stat">selected <b id="cSel">0</b></span>
+          <span class="stat">selected <b id="cSel">1</b></span>
           <span class="stat">generated <b id="cGen">0</b></span>
         </div>
       </div>
       <div class="card">
-        <div class="section-label">Generated names (edit if you want)</div>
-        <textarea id="names" placeholder="Generate on Setup, or paste names here…"></textarea>
-        <button class="btn primary" id="btnGoStart" style="width:100%;margin-top:4px">Go to Start →</button>
+        <div class="section-label">Name list</div>
+        <p class="hint">Generate above or paste usernames (one per line).</p>
+        <textarea id="names" placeholder="Names show up here after Generate…"></textarea>
+        <button class="btn primary" id="btnGoSnipe" style="width:100%">Go to Snipe →</button>
       </div>
     </div>
 
-    <div class="page" id="page-start">
+    <div class="page" id="page-snipe">
       <div class="card">
-        <div class="section-label">Names to check</div>
-        <p class="hint">Runs live Discord availability. Taken names are left alone — nothing is claimed.</p>
-        <textarea id="namesStart" placeholder="Names appear here from Setup…"></textarea>
-        <div class="section-label" style="margin-top:10px">Check speed</div>
-        <p class="hint">Requests per second to Discord. Auto mode slows down if rate-limited or latency spikes.</p>
+        <div class="section-label">Targets</div>
+        <textarea id="namesSnipe" placeholder="Names from Setup…"></textarea>
+        <div class="section-label" style="margin-top:8px">Auth</div>
+        <p class="hint">Uses Render env DISCORD_TOKEN / DISCORD_PASSWORD if set. Or paste below.</p>
+        <input id="token" type="password" placeholder="Discord user token (optional if env set)" autocomplete="off" />
+        <input id="password" type="password" placeholder="Discord password (optional if env set)" autocomplete="off" />
+        <div class="section-label" style="margin-top:8px">Speed</div>
         <div class="controls" style="align-items:center">
-          <label style="font-size:0.8rem;color:var(--muted);min-width:70px">RPS <b id="rpsVal">5</b></label>
-          <input id="rps" type="range" min="1" max="15" value="5" step="1" style="flex:1;margin:0;accent-color:#6c5ce7" />
-          <label style="font-size:0.78rem;color:var(--muted);display:flex;align-items:center;gap:6px;white-space:nowrap">
-            <input id="autoRate" type="checkbox" style="width:auto;margin:0" /> Auto
-          </label>
+          <label style="font-size:0.8rem;color:var(--muted);min-width:70px">RPS <b id="rpsVal">3</b></label>
+          <input id="rps" type="range" min="1" max="10" value="3" step="1" style="flex:1;margin:0;accent-color:#6c5ce7" />
         </div>
+        <label style="font-size:0.78rem;color:var(--muted);display:flex;align-items:center;gap:8px;margin-top:8px">
+          <input id="stopOnClaim" type="checkbox" checked style="width:auto;margin:0" /> Stop after first successful claim
+        </label>
         <div class="controls">
-          <button class="btn green" id="btnCheck">Start check</button>
-          <button class="btn ghost" id="btnKeepAvail">Keep available only</button>
-          <button class="btn ghost" id="btnBackSetup">← Setup</button>
+          <button class="btn green" id="btnSnipe">Start snipe</button>
+          <button class="btn ghost" id="btnBack">← Setup</button>
         </div>
         <div class="stats">
-          <span class="stat avail">available <b id="cAvail">0</b></span>
+          <span class="stat ok">claimed <b id="cClaimed">0</b></span>
           <span class="stat">taken <b id="cTaken">0</b></span>
-          <span class="stat">invalid <b id="cInv">0</b></span>
-        </div>
-      </div>
-      <div class="card">
-        <div class="section-label">Quick one name</div>
-        <div class="single">
-          <input id="oneName" placeholder="Check one username…" />
-          <button class="btn primary" id="btnOne">Check</button>
+          <span class="stat">failed <b id="cFail">0</b></span>
         </div>
       </div>
       <div class="card">
@@ -181,7 +176,7 @@
       </div>
     </div>
 
-    <footer>Live Discord API · generator + checker · no claim</footer>
+    <footer>Discord username sniper · generate + claim available</footer>
   </div>
 
   <script>
@@ -189,11 +184,11 @@
     const patterns = [['Semi3L','Semi 3L'],['Dotted','Dotted'],['Repeaters','_Repeaters'],['LetterRepeaters','Letter Repeaters'],['4LPronounceable','4L Pron'],['5LPronounceable','5L Pron'],['Faces','Faces']];
     const words = [['WordsEN','Words EN'],['WordsFR','Words FR']];
 
+    let stackMode = false;
     const selected = new Set(['3L']);
     const namesEl = document.getElementById('names');
-    const namesStart = document.getElementById('namesStart');
+    const namesSnipe = document.getElementById('namesSnipe');
     const logEl = document.getElementById('log');
-    let lastResults = [];
 
     function log(msg, cls='') {
       const d = document.createElement('div');
@@ -207,28 +202,35 @@
       document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
       document.getElementById('page-' + id).classList.add('active');
       document.querySelector('.tab[data-page="'+id+'"]').classList.add('active');
-      if (id === 'start') {
-        if (!namesStart.value.trim() && namesEl.value.trim()) {
-          namesStart.value = namesEl.value;
-        }
+      if (id === 'snipe' && !namesSnipe.value.trim() && namesEl.value.trim()) {
+        namesSnipe.value = namesEl.value;
       }
     }
     document.getElementById('tabSetup').onclick = () => showPage('setup');
-    document.getElementById('tabStart').onclick = () => showPage('start');
-    document.getElementById('btnGoStart').onclick = () => {
-      namesStart.value = namesEl.value;
-      showPage('start');
+    document.getElementById('tabSnipe').onclick = () => showPage('snipe');
+    document.getElementById('btnGoSnipe').onclick = () => {
+      namesSnipe.value = namesEl.value;
+      showPage('snipe');
     };
-    document.getElementById('btnBackSetup').onclick = () => showPage('setup');
+    document.getElementById('btnBack').onclick = () => showPage('setup');
+
+    document.getElementById('stackMode').onchange = (e) => {
+      stackMode = e.target.checked;
+      if (!stackMode && selected.size > 1) {
+        const keep = [...selected][0];
+        selected.clear();
+        selected.add(keep);
+        document.querySelectorAll('.chip').forEach(c => {
+          c.classList.toggle('on', c.dataset.id === keep);
+        });
+      }
+      refreshStack();
+    };
 
     function refreshStack() {
       document.getElementById('cSel').textContent = selected.size;
       const box = document.getElementById('stackPreview');
       box.innerHTML = '';
-      if (!selected.size) {
-        box.innerHTML = '<span class="hint">No presets selected</span>';
-        return;
-      }
       [...selected].forEach(id => {
         const s = document.createElement('span');
         s.className = 'stack-badge';
@@ -241,11 +243,22 @@
       const b = document.createElement('button');
       b.type = 'button';
       b.className = 'chip' + (selected.has(id) ? ' on' : '');
+      b.dataset.id = id;
       b.textContent = label;
       b.onclick = () => {
-        if (selected.has(id)) selected.delete(id);
-        else selected.add(id);
+        if (stackMode) {
+          if (selected.has(id)) {
+            if (selected.size > 1) selected.delete(id);
+          } else selected.add(id);
+        } else {
+          selected.clear();
+          selected.add(id);
+          document.querySelectorAll('.chip').forEach(c => c.classList.remove('on'));
+        }
         b.classList.toggle('on', selected.has(id));
+        if (!stackMode) document.querySelectorAll('.chip').forEach(c => {
+          c.classList.toggle('on', selected.has(c.dataset.id));
+        });
         refreshStack();
       };
       group.appendChild(b);
@@ -255,84 +268,84 @@
     words.forEach(([id,l]) => mkChip(id,l,document.getElementById('wordBtns')));
     refreshStack();
 
-    document.getElementById('btnClearSel').onclick = () => {
-      selected.clear();
-      document.querySelectorAll('.chip').forEach(c => c.classList.remove('on'));
-      refreshStack();
-    };
-
     document.getElementById('btnGen').onclick = async () => {
-      if (!selected.size) return log('pick at least one preset', 'warn');
-      const limit = document.getElementById('limit').value;
+      if (!selected.size) return log('pick a preset', 'warn');
+      const limit = Math.min(10000, Math.max(10, Number(document.getElementById('limit').value) || 500));
       const presets = [...selected];
-      log('generating stack [' + presets.join(' + ') + '] × ' + limit + '…', 'info');
+      log('generating [' + presets.join('+') + '] x ' + limit + '…', 'info');
+      const btn = document.getElementById('btnGen');
+      btn.disabled = true;
       try {
         const r = await fetch('/api/generate', {
-          method: 'POST', headers: { 'Content-Type': 'application/json' },
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ presets, limit })
         }).then(x => x.json());
-        if (!r.ok) return log('error: ' + r.error, 'bad');
-        namesEl.value = r.usernames.join('\n');
-        document.getElementById('cGen').textContent = r.count;
-        log('generated ' + r.count + ' from ' + presets.join('+'), 'ok');
-      } catch (e) { log('network error: ' + e.message, 'bad'); }
+        if (!r.ok) {
+          log('generate failed: ' + (r.error || 'unknown'), 'bad');
+          return;
+        }
+        namesEl.value = (r.usernames || []).join('\n');
+        document.getElementById('cGen').textContent = r.count || 0;
+        if (!r.count) log('0 names — try another preset', 'warn');
+        else log('generated ' + r.count + ' names', 'ok');
+      } catch (e) {
+        log('network error: ' + e.message + ' (if site just woke up, wait 30s and retry)', 'bad');
+      } finally {
+        btn.disabled = false;
+      }
     };
 
-    document.getElementById('btnCheck').onclick = async () => {
-      const list = namesStart.value.split(/\n/).map(s => s.trim()).filter(Boolean);
-      if (!list.length) return log('no names — generate on Setup first', 'warn');
-      const rps = Number(document.getElementById('rps').value)||5;
-      const mode = document.getElementById('autoRate').checked ? 'auto' : 'fixed';
-      log('checking ' + list.length + ' names @ ' + rps + ' rps' + (mode==='auto'?' (auto)':'') + '…', 'info');
-      try {
-        const r = await fetch('/api/check', {
-          method: 'POST', headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ usernames: list, rps, mode })
-        }).then(x => x.json());
-        if (!r.ok) return log('error: ' + r.error, 'bad');
-        lastResults = r.results || [];
-        document.getElementById('cAvail').textContent = r.summary.available;
-        document.getElementById('cTaken').textContent = r.summary.taken;
-        document.getElementById('cInv').textContent = r.summary.invalid;
-        r.results.forEach(x => {
-          if (x.status === 'available') log('AVAILABLE  @' + x.username, 'ok');
-          else if (x.status === 'invalid') log('invalid    @' + x.username + '  ' + (x.reason || ''), 'warn');
-        });
-        log('done — available: ' + r.summary.available + ' / taken: ' + r.summary.taken, 'info');
-      } catch (e) { log('network error: ' + e.message, 'bad'); }
-    };
-
-    document.getElementById('btnKeepAvail').onclick = () => {
-      const avail = lastResults.filter(x => x.status === 'available').map(x => x.username);
-      if (!avail.length) return log('run Start check first', 'warn');
-      namesStart.value = avail.join('\n');
-      log('kept ' + avail.length + ' available', 'ok');
-    };
-
-    document.getElementById('btnOne').onclick = async () => {
-      const username = document.getElementById('oneName').value.trim();
-      if (!username) return log('type a name first', 'warn');
-      log('checking @' + username + '…', 'info');
-      try {
-        const r = await fetch('/api/check-one', {
-          method: 'POST', headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ username })
-        }).then(x => x.json());
-        if (!r.ok) return log('error: ' + r.error, 'bad');
-        const x = r.result;
-        if (x.status === 'available') log('AVAILABLE  @' + x.username, 'ok');
-        else if (x.status === 'taken') log('taken      @' + x.username, 'taken');
-        else if (x.status === 'invalid') log('invalid    @' + x.username + '  ' + (x.reason || ''), 'warn');
-        else log('error      @' + x.username + '  ' + (x.reason || ''), 'bad');
-      } catch (e) { log('network error: ' + e.message, 'bad'); }
-    };
-
-    document.getElementById('oneName').addEventListener('keydown', e => {
-      if (e.key === 'Enter') document.getElementById('btnOne').click();
-    });
     document.getElementById('rps').oninput = (e) => {
       document.getElementById('rpsVal').textContent = e.target.value;
     };
+
+    document.getElementById('btnSnipe').onclick = async () => {
+      const list = namesSnipe.value.split(/\n/).map(s => s.trim()).filter(Boolean);
+      if (!list.length) return log('no names — generate on Setup first', 'warn');
+      const token = document.getElementById('token').value.trim();
+      const password = document.getElementById('password').value;
+      const rps = Number(document.getElementById('rps').value) || 3;
+      const stopOnClaim = document.getElementById('stopOnClaim').checked;
+      log('sniping ' + list.length + ' @ ' + rps + ' rps…', 'info');
+      const btn = document.getElementById('btnSnipe');
+      btn.disabled = true;
+      try {
+        const body = { usernames: list, rps, stopOnClaim };
+        if (token) body.token = token;
+        if (password) body.password = password;
+        const r = await fetch('/api/snipe', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(body)
+        }).then(x => x.json());
+        if (!r.ok) {
+          log('snipe error: ' + (r.error || JSON.stringify(r)), 'bad');
+          return;
+        }
+        document.getElementById('cClaimed').textContent = r.summary.claimed;
+        document.getElementById('cTaken').textContent = r.summary.taken;
+        document.getElementById('cFail').textContent = (r.summary.available_failed || 0) + (r.summary.error || 0);
+        (r.results || []).forEach(row => {
+          if (row.status === 'claimed') log('CLAIMED  @' + row.username, 'ok');
+          else if (row.status === 'claim_failed') log('claim fail @' + row.username + ' ' + (row.claim?.message || ''), 'bad');
+          else if (row.status === 'taken') log('taken    @' + row.username, 'taken');
+          else if (row.status === 'invalid') log('invalid  @' + row.username, 'warn');
+          else log(row.status + ' @' + row.username, 'warn');
+        });
+        if (r.claimed) log('SUCCESS — username is now @' + r.claimed, 'ok');
+        else log('done — no claim this run', 'info');
+      } catch (e) {
+        log('network error: ' + e.message, 'bad');
+      } finally {
+        btn.disabled = false;
+      }
+    };
+
+    fetch('/api/status').then(r => r.json()).then(s => {
+      if (s.hasEnvToken) log('env: DISCORD_TOKEN set', 'info');
+      if (s.hasEnvPassword) log('env: DISCORD_PASSWORD set', 'info');
+    }).catch(() => {});
   </script>
 </body>
 </html>
