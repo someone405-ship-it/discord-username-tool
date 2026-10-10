@@ -1,0 +1,250 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <title>Discord Username Tool</title>
+  <style>
+    :root {
+      --bg: #0b0b10; --card: #14141c; --border: #262636; --text: #f0f0f8;
+      --muted: #8b8ba0; --accent: #6c5ce7; --accent2: #a29bfe;
+      --green: #00d68f; --red: #ff6b81; --yellow: #ffc048; --blue: #54a0ff;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, sans-serif;
+      background: radial-gradient(900px 500px at 50% -15%, #1a1635 0%, var(--bg) 50%);
+      color: var(--text); min-height: 100vh; padding: 20px 14px 48px;
+    }
+    .wrap { max-width: 680px; margin: 0 auto; }
+    h1 { font-size: 1.5rem; font-weight: 700; letter-spacing: -0.02em; }
+    .sub { color: var(--muted); font-size: 0.88rem; margin: 4px 0 20px; }
+    .card {
+      background: var(--card); border: 1px solid var(--border); border-radius: 18px;
+      padding: 18px; margin-bottom: 14px; box-shadow: 0 8px 32px rgba(0,0,0,.25);
+    }
+    .section-label {
+      font-size: 0.7rem; text-transform: uppercase; letter-spacing: .08em;
+      color: var(--muted); margin-bottom: 10px; font-weight: 600;
+    }
+    .row { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 10px; }
+    .btn {
+      border: 1px solid var(--border); background: #1c1c28; color: var(--text);
+      padding: 9px 13px; border-radius: 11px; font-size: 0.82rem; font-weight: 500;
+      cursor: pointer; transition: .12s; user-select: none;
+    }
+    .btn:hover { border-color: var(--accent2); background: #242436; }
+    .btn:active { transform: scale(0.97); }
+    .btn.active {
+      background: linear-gradient(135deg, var(--accent), #5a4fcf);
+      border-color: transparent; color: #fff;
+      box-shadow: 0 4px 14px rgba(108,92,231,.35);
+    }
+    .btn.primary {
+      background: linear-gradient(135deg, var(--accent), #5a4fcf);
+      border-color: transparent; color: #fff; font-weight: 600;
+    }
+    .btn.ghost { background: transparent; }
+    .btn.green { border-color: #1e4a38; color: var(--green); background: #122a20; }
+    .btn.green:hover { background: #183528; }
+    input, textarea {
+      width: 100%; background: #0e0e16; border: 1px solid var(--border);
+      border-radius: 12px; color: var(--text); padding: 11px 13px;
+      font-size: 0.9rem; outline: none; margin-bottom: 8px;
+    }
+    input:focus, textarea:focus { border-color: var(--accent); }
+    textarea {
+      min-height: 140px; font-family: ui-monospace, Menlo, Consolas, monospace;
+      font-size: 0.8rem; line-height: 1.45; resize: vertical;
+    }
+    .controls { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; margin-top: 12px; }
+    .controls input[type=number] { width: 100px; margin: 0; }
+    .stats {
+      display: flex; gap: 14px; flex-wrap: wrap; margin-top: 12px; padding-top: 12px;
+      border-top: 1px solid var(--border);
+    }
+    .stat { font-size: 0.8rem; color: var(--muted); }
+    .stat b { color: var(--text); font-weight: 600; }
+    .stat.avail b { color: var(--green); }
+    .log {
+      max-height: 240px; overflow-y: auto;
+      font-family: ui-monospace, Menlo, Consolas, monospace; font-size: 0.76rem;
+      line-height: 1.5; background: #0a0a10; border-radius: 12px;
+      padding: 12px; border: 1px solid var(--border);
+    }
+    .log .ok { color: var(--green); } .log .taken { color: var(--muted); }
+    .log .bad { color: var(--red); } .log .warn { color: var(--yellow); }
+    .log .info { color: var(--blue); }
+    .single { display: flex; gap: 8px; }
+    .single input { flex: 1; margin: 0; }
+    .hint { font-size: 0.75rem; color: var(--muted); margin-bottom: 10px; line-height: 1.4; }
+    footer { text-align: center; color: var(--muted); font-size: 0.75rem; margin-top: 18px; }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <h1>Discord Username Tool</h1>
+    <p class="sub">Generate · live check · optional claim with your token</p>
+
+    <div class="card">
+      <div class="section-label">Short combinations</div>
+      <div class="row" id="shortBtns"></div>
+      <div class="section-label">Patterns</div>
+      <div class="row" id="patternBtns"></div>
+      <div class="section-label">Wordlists</div>
+      <div class="row" id="wordBtns"></div>
+      <div class="controls">
+        <input id="limit" type="number" value="1500" min="10" max="50000" />
+        <button class="btn primary" id="btnGen">Generate</button>
+        <button class="btn ghost" id="btnClear">Clear</button>
+        <button class="btn green" id="btnCheck">Check availability</button>
+      </div>
+      <div class="stats">
+        <span class="stat">generated <b id="cGen">0</b></span>
+        <span class="stat avail">available <b id="cAvail">0</b></span>
+        <span class="stat">taken <b id="cTaken">0</b></span>
+        <span class="stat">invalid <b id="cInv">0</b></span>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="section-label">Usernames (one per line)</div>
+      <textarea id="names" placeholder="coolname&#10;x_x&#10;nova"></textarea>
+      <div class="single" style="margin-top:8px">
+        <input id="oneName" placeholder="Quick check one name…" />
+        <button class="btn primary" id="btnOne">Check</button>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="section-label">Claim (optional)</div>
+      <p class="hint">Needs your Discord user token + account password. Only claim names that show AVAILABLE. See README for how to get your token.</p>
+      <input id="token" type="password" placeholder="Discord token" autocomplete="off" />
+      <input id="password" type="password" placeholder="Account password" autocomplete="off" />
+      <input id="claimName" placeholder="Username to claim" />
+      <button class="btn primary" id="btnClaim" style="margin-top:4px">Check + Claim</button>
+    </div>
+
+    <div class="card">
+      <div class="section-label">Log</div>
+      <div class="log" id="log"></div>
+    </div>
+    <footer>Live Discord API · generator + checker + claim</footer>
+  </div>
+
+  <script>
+    const short = [['2C','2C'],['2L','2L'],['2N','2N'],['3C','3C'],['3L','3L'],['3N','3N'],['4N','4N'],['4L','4L'],['4C','4C']];
+    const patterns = [['Semi3L','Semi 3L'],['Dotted','Dotted'],['Repeaters','_Repeaters'],['LetterRepeaters','Letter Repeaters'],['4LPronounceable','4L Pronounceable'],['5LPronounceable','5L Pronounceable'],['Faces','Faces (X_X)']];
+    const words = [['WordsEN','Words EN'],['WordsFR','Words FR']];
+    let selected = '3L';
+    const namesEl = document.getElementById('names');
+    const logEl = document.getElementById('log');
+
+    function mkBtn(id, label, group) {
+      const b = document.createElement('button');
+      b.className = 'btn' + (id === selected ? ' active' : '');
+      b.textContent = label;
+      b.onclick = () => {
+        selected = id;
+        document.querySelectorAll('.btn').forEach(x => { if (!x.id) x.classList.remove('active'); });
+        b.classList.add('active');
+      };
+      group.appendChild(b);
+    }
+    short.forEach(([id,l]) => mkBtn(id,l,document.getElementById('shortBtns')));
+    patterns.forEach(([id,l]) => mkBtn(id,l,document.getElementById('patternBtns')));
+    words.forEach(([id,l]) => mkBtn(id,l,document.getElementById('wordBtns')));
+
+    function log(msg, cls='') {
+      const d = document.createElement('div');
+      if (cls) d.className = cls;
+      d.textContent = msg;
+      logEl.prepend(d);
+    }
+
+    document.getElementById('btnGen').onclick = async () => {
+      const limit = document.getElementById('limit').value;
+      log('generating ' + selected + ' × ' + limit + '…', 'info');
+      try {
+        const r = await fetch('/api/generate', {
+          method: 'POST', headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ preset: selected, limit })
+        }).then(x => x.json());
+        if (!r.ok) return log('error: ' + r.error, 'bad');
+        namesEl.value = r.usernames.join('\n');
+        document.getElementById('cGen').textContent = r.count;
+        log('generated ' + r.count + ' names', 'ok');
+      } catch (e) { log('network error: ' + e.message, 'bad'); }
+    };
+
+    document.getElementById('btnClear').onclick = () => {
+      namesEl.value = ''; logEl.innerHTML = '';
+      ['cGen','cAvail','cTaken','cInv'].forEach(id => document.getElementById(id).textContent = '0');
+    };
+
+    document.getElementById('btnCheck').onclick = async () => {
+      const list = namesEl.value.split(/\n/).map(s => s.trim()).filter(Boolean);
+      if (!list.length) return log('no names to check', 'warn');
+      log('checking ' + list.length + ' names…', 'info');
+      try {
+        const r = await fetch('/api/check', {
+          method: 'POST', headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ usernames: list })
+        }).then(x => x.json());
+        if (!r.ok) return log('error: ' + r.error, 'bad');
+        document.getElementById('cAvail').textContent = r.summary.available;
+        document.getElementById('cTaken').textContent = r.summary.taken;
+        document.getElementById('cInv').textContent = r.summary.invalid;
+        const avail = [];
+        r.results.forEach(x => {
+          if (x.status === 'available') { avail.push(x.username); log('AVAILABLE  @' + x.username, 'ok'); }
+          else if (x.status === 'invalid') log('invalid    @' + x.username + '  ' + (x.reason || ''), 'warn');
+        });
+        if (avail.length) { namesEl.value = avail.join('\n'); log('kept ' + avail.length + ' available', 'ok'); }
+        else log('none available in this batch', 'taken');
+      } catch (e) { log('network error: ' + e.message, 'bad'); }
+    };
+
+    document.getElementById('btnOne').onclick = async () => {
+      const username = document.getElementById('oneName').value.trim();
+      if (!username) return log('type a name first', 'warn');
+      log('checking @' + username + '…', 'info');
+      try {
+        const r = await fetch('/api/check-one', {
+          method: 'POST', headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ username })
+        }).then(x => x.json());
+        if (!r.ok) return log('error: ' + r.error, 'bad');
+        const x = r.result;
+        if (x.status === 'available') log('AVAILABLE  @' + x.username, 'ok');
+        else if (x.status === 'taken') log('taken      @' + x.username, 'taken');
+        else if (x.status === 'invalid') log('invalid    @' + x.username + '  ' + (x.reason || ''), 'warn');
+        else log('error      @' + x.username + '  ' + (x.reason || ''), 'bad');
+      } catch (e) { log('network error: ' + e.message, 'bad'); }
+    };
+
+    document.getElementById('btnClaim').onclick = async () => {
+      const username = document.getElementById('claimName').value.trim();
+      const token = document.getElementById('token').value.trim();
+      const password = document.getElementById('password').value;
+      if (!username || !token || !password) return log('need username + token + password', 'warn');
+      log('claiming @' + username + '…', 'info');
+      try {
+        const r = await fetch('/api/claim', {
+          method: 'POST', headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ username, token, password })
+        }).then(x => x.json());
+        if (r.ok) log('CLAIMED @' + username, 'ok');
+        else {
+          const detail = r.result?.message || r.result?.error || r.check?.status || r.error || JSON.stringify(r);
+          log('failed: ' + detail, 'bad');
+        }
+      } catch (e) { log('network error: ' + e.message, 'bad'); }
+    };
+
+    document.getElementById('oneName').addEventListener('keydown', e => {
+      if (e.key === 'Enter') document.getElementById('btnOne').click();
+    });
+  </script>
+</body>
+</html>
