@@ -62,6 +62,7 @@
       border-color: transparent; color: #fff;
     }
     .btn.green { border-color: #1e4a38; color: var(--green); background: #122a20; }
+    .btn.red { border-color: #5a2030; color: var(--red); background: #2a1218; }
     .btn.ghost { background: transparent; color: var(--muted); }
     .btn:disabled { opacity: 0.45; cursor: not-allowed; }
     input, textarea {
@@ -80,7 +81,7 @@
     .stat b { color: var(--text); }
     .stat.ok b { color: var(--green); }
     .log {
-      max-height: 280px; overflow-y: auto;
+      max-height: 300px; overflow-y: auto;
       font-family: ui-monospace, Menlo, Consolas, monospace; font-size: 0.76rem;
       line-height: 1.5; background: #0a0a10; border-radius: 12px;
       padding: 12px; border: 1px solid var(--border);
@@ -100,13 +101,20 @@
       color: var(--accent2); font-size: 0.72rem; padding: 3px 8px; border-radius: 8px;
       margin: 2px 4px 2px 0;
     }
+    .progress {
+      height: 6px; background: #0e0e16; border-radius: 4px; margin-top: 10px; overflow: hidden;
+    }
+    .progress > div {
+      height: 100%; width: 0%; background: linear-gradient(90deg, var(--accent), var(--green));
+      transition: width 0.15s;
+    }
     footer { text-align: center; color: var(--muted); font-size: 0.72rem; margin-top: 16px; }
   </style>
 </head>
 <body>
   <div class="wrap">
     <h1>Discord Username Sniper</h1>
-    <p class="sub">Generate · snipe available names with your token</p>
+    <p class="sub">Generate · snipe · stop anytime</p>
 
     <div class="tabs">
       <button class="tab active" data-page="setup" id="tabSetup">1 · Setup</button>
@@ -117,9 +125,8 @@
       <div class="card">
         <div class="toggle-row">
           <input type="checkbox" id="stackMode" />
-          <label for="stackMode">Stack mode — select multiple presets (2L + 3L + …)</label>
+          <label for="stackMode">Stack mode — select multiple presets</label>
         </div>
-        <div class="section-label">Presets</div>
         <div class="section-label">Short</div>
         <div class="row" id="shortBtns"></div>
         <div class="section-label">Patterns</div>
@@ -128,7 +135,7 @@
         <div class="row" id="wordBtns"></div>
         <div id="stackPreview" style="margin-top:6px;min-height:24px"></div>
         <div class="controls">
-          <input id="limit" type="number" value="500" min="10" max="10000" title="How many names" />
+          <input id="limit" type="number" value="500" min="10" max="10000" />
           <button class="btn primary" id="btnGen">Generate</button>
         </div>
         <div class="stats">
@@ -138,8 +145,7 @@
       </div>
       <div class="card">
         <div class="section-label">Name list</div>
-        <p class="hint">Generate above or paste usernames (one per line).</p>
-        <textarea id="names" placeholder="Names show up here after Generate…"></textarea>
+        <textarea id="names" placeholder="Generate or paste names (one per line)…"></textarea>
         <button class="btn primary" id="btnGoSnipe" style="width:100%">Go to Snipe →</button>
       </div>
     </div>
@@ -149,9 +155,9 @@
         <div class="section-label">Targets</div>
         <textarea id="namesSnipe" placeholder="Names from Setup…"></textarea>
         <div class="section-label" style="margin-top:8px">Auth</div>
-        <p class="hint">Uses Render env DISCORD_TOKEN / DISCORD_PASSWORD if set. Or paste below.</p>
-        <input id="token" type="password" placeholder="Discord user token (optional if env set)" autocomplete="off" />
-        <input id="password" type="password" placeholder="Discord password (optional if env set)" autocomplete="off" />
+        <p class="hint">Env DISCORD_TOKEN / DISCORD_PASSWORD on Render work if set. Or paste here.</p>
+        <input id="token" type="password" placeholder="Discord user token" autocomplete="off" />
+        <input id="password" type="password" placeholder="Discord account password" autocomplete="off" />
         <div class="section-label" style="margin-top:8px">Speed</div>
         <div class="controls" style="align-items:center">
           <label style="font-size:0.8rem;color:var(--muted);min-width:70px">RPS <b id="rpsVal">3</b></label>
@@ -162,9 +168,12 @@
         </label>
         <div class="controls">
           <button class="btn green" id="btnSnipe">Start snipe</button>
+          <button class="btn red" id="btnStop" disabled>Stop</button>
           <button class="btn ghost" id="btnBack">← Setup</button>
         </div>
+        <div class="progress"><div id="bar"></div></div>
         <div class="stats">
+          <span class="stat">progress <b id="cProg">0/0</b></span>
           <span class="stat ok">claimed <b id="cClaimed">0</b></span>
           <span class="stat">taken <b id="cTaken">0</b></span>
           <span class="stat">failed <b id="cFail">0</b></span>
@@ -176,7 +185,7 @@
       </div>
     </div>
 
-    <footer>Discord username sniper · generate + claim available</footer>
+    <footer>Client-side snipe loop · stop anytime · no long server timeout</footer>
   </div>
 
   <script>
@@ -189,11 +198,13 @@
     const namesEl = document.getElementById('names');
     const namesSnipe = document.getElementById('namesSnipe');
     const logEl = document.getElementById('log');
+    let stopFlag = false;
+    let running = false;
 
     function log(msg, cls='') {
       const d = document.createElement('div');
       if (cls) d.className = cls;
-      d.textContent = msg;
+      d.textContent = '[' + new Date().toLocaleTimeString() + '] ' + msg;
       logEl.prepend(d);
     }
 
@@ -220,9 +231,7 @@
         const keep = [...selected][0];
         selected.clear();
         selected.add(keep);
-        document.querySelectorAll('.chip').forEach(c => {
-          c.classList.toggle('on', c.dataset.id === keep);
-        });
+        document.querySelectorAll('.chip').forEach(c => c.classList.toggle('on', c.dataset.id === keep));
       }
       refreshStack();
     };
@@ -247,18 +256,13 @@
       b.textContent = label;
       b.onclick = () => {
         if (stackMode) {
-          if (selected.has(id)) {
-            if (selected.size > 1) selected.delete(id);
-          } else selected.add(id);
+          if (selected.has(id)) { if (selected.size > 1) selected.delete(id); }
+          else selected.add(id);
         } else {
           selected.clear();
           selected.add(id);
-          document.querySelectorAll('.chip').forEach(c => c.classList.remove('on'));
         }
-        b.classList.toggle('on', selected.has(id));
-        if (!stackMode) document.querySelectorAll('.chip').forEach(c => {
-          c.classList.toggle('on', selected.has(c.dataset.id));
-        });
+        document.querySelectorAll('.chip').forEach(c => c.classList.toggle('on', selected.has(c.dataset.id)));
         refreshStack();
       };
       group.appendChild(b);
@@ -272,7 +276,7 @@
       if (!selected.size) return log('pick a preset', 'warn');
       const limit = Math.min(10000, Math.max(10, Number(document.getElementById('limit').value) || 500));
       const presets = [...selected];
-      log('generating [' + presets.join('+') + '] x ' + limit + '…', 'info');
+      log('generating [' + presets.join('+') + '] x ' + limit, 'info');
       const btn = document.getElementById('btnGen');
       btn.disabled = true;
       try {
@@ -281,16 +285,12 @@
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ presets, limit })
         }).then(x => x.json());
-        if (!r.ok) {
-          log('generate failed: ' + (r.error || 'unknown'), 'bad');
-          return;
-        }
+        if (!r.ok) return log('generate failed: ' + (r.error || 'unknown'), 'bad');
         namesEl.value = (r.usernames || []).join('\n');
         document.getElementById('cGen').textContent = r.count || 0;
-        if (!r.count) log('0 names — try another preset', 'warn');
-        else log('generated ' + r.count + ' names', 'ok');
+        log('generated ' + (r.count || 0) + ' names', 'ok');
       } catch (e) {
-        log('network error: ' + e.message + ' (if site just woke up, wait 30s and retry)', 'bad');
+        log('network: ' + e.message + ' — wait if site just woke up', 'bad');
       } finally {
         btn.disabled = false;
       }
@@ -300,52 +300,123 @@
       document.getElementById('rpsVal').textContent = e.target.value;
     };
 
+    document.getElementById('btnStop').onclick = () => {
+      stopFlag = true;
+      log('stop requested…', 'warn');
+    };
+
+    function sleep(ms) {
+      return new Promise(r => setTimeout(r, ms));
+    }
+
     document.getElementById('btnSnipe').onclick = async () => {
+      if (running) return;
       const list = namesSnipe.value.split(/\n/).map(s => s.trim()).filter(Boolean);
       if (!list.length) return log('no names — generate on Setup first', 'warn');
+
       const token = document.getElementById('token').value.trim();
       const password = document.getElementById('password').value;
-      const rps = Number(document.getElementById('rps').value) || 3;
+      const rps = Math.max(1, Math.min(10, Number(document.getElementById('rps').value) || 3));
+      const delay = Math.round(1000 / rps);
       const stopOnClaim = document.getElementById('stopOnClaim').checked;
-      log('sniping ' + list.length + ' @ ' + rps + ' rps…', 'info');
-      const btn = document.getElementById('btnSnipe');
-      btn.disabled = true;
+
       try {
-        const body = { usernames: list, rps, stopOnClaim };
-        if (token) body.token = token;
-        if (password) body.password = password;
-        const r = await fetch('/api/snipe', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(body)
-        }).then(x => x.json());
-        if (!r.ok) {
-          log('snipe error: ' + (r.error || JSON.stringify(r)), 'bad');
-          return;
+        const st = await fetch('/api/status').then(x => x.json());
+        if (!token && !st.hasEnvToken) {
+          return log('no token — paste token or set DISCORD_TOKEN on Render', 'bad');
         }
-        document.getElementById('cClaimed').textContent = r.summary.claimed;
-        document.getElementById('cTaken').textContent = r.summary.taken;
-        document.getElementById('cFail').textContent = (r.summary.available_failed || 0) + (r.summary.error || 0);
-        (r.results || []).forEach(row => {
-          if (row.status === 'claimed') log('CLAIMED  @' + row.username, 'ok');
-          else if (row.status === 'claim_failed') log('claim fail @' + row.username + ' ' + (row.claim?.message || ''), 'bad');
-          else if (row.status === 'taken') log('taken    @' + row.username, 'taken');
-          else if (row.status === 'invalid') log('invalid  @' + row.username, 'warn');
-          else log(row.status + ' @' + row.username, 'warn');
-        });
-        if (r.claimed) log('SUCCESS — username is now @' + r.claimed, 'ok');
-        else log('done — no claim this run', 'info');
-      } catch (e) {
-        log('network error: ' + e.message, 'bad');
-      } finally {
-        btn.disabled = false;
+        if (!password && !st.hasEnvPassword) {
+          return log('no password — paste password or set DISCORD_PASSWORD on Render', 'bad');
+        }
+      } catch (_) {}
+
+      running = true;
+      stopFlag = false;
+      document.getElementById('btnSnipe').disabled = true;
+      document.getElementById('btnStop').disabled = false;
+
+      let claimed = 0, taken = 0, fail = 0;
+      document.getElementById('cClaimed').textContent = '0';
+      document.getElementById('cTaken').textContent = '0';
+      document.getElementById('cFail').textContent = '0';
+      log('snipe start — ' + list.length + ' names @ ' + rps + ' rps', 'info');
+
+      for (let i = 0; i < list.length; i++) {
+        if (stopFlag) {
+          log('stopped at ' + i + '/' + list.length, 'warn');
+          break;
+        }
+        const username = list[i].toLowerCase();
+        document.getElementById('cProg').textContent = (i + 1) + '/' + list.length;
+        document.getElementById('bar').style.width = Math.round(((i + 1) / list.length) * 100) + '%';
+
+        try {
+          const checkBody = { username };
+          if (token) checkBody.token = token;
+          const cr = await fetch('/api/check-one', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(checkBody)
+          }).then(x => x.json());
+
+          if (!cr.ok) {
+            fail++;
+            log('error @' + username + ' ' + (cr.error || ''), 'bad');
+          } else if (cr.result.status === 'available') {
+            log('AVAILABLE @' + username + ' — claiming…', 'ok');
+            const claimBody = { username };
+            if (token) claimBody.token = token;
+            if (password) claimBody.password = password;
+            const cl = await fetch('/api/claim', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify(claimBody)
+            }).then(x => x.json());
+
+            if (cl.ok) {
+              claimed++;
+              document.getElementById('cClaimed').textContent = claimed;
+              log('CLAIMED @' + username, 'ok');
+              if (stopOnClaim) {
+                log('stop after claim (enabled)', 'info');
+                break;
+              }
+            } else {
+              fail++;
+              const msg = cl.claim?.message || cl.check?.status || cl.error || 'claim failed';
+              log('claim fail @' + username + ' — ' + msg, 'bad');
+            }
+          } else if (cr.result.status === 'taken') {
+            taken++;
+            document.getElementById('cTaken').textContent = taken;
+          } else if (cr.result.status === 'invalid') {
+            fail++;
+            log('invalid @' + username + ' ' + (cr.result.reason || ''), 'warn');
+          } else {
+            fail++;
+            log((cr.result.status || 'error') + ' @' + username + ' ' + (cr.result.reason || ''), 'bad');
+          }
+        } catch (e) {
+          fail++;
+          log('network @' + username + ' ' + e.message, 'bad');
+        }
+
+        document.getElementById('cFail').textContent = fail;
+        if (i < list.length - 1 && !stopFlag) await sleep(delay);
       }
+
+      running = false;
+      document.getElementById('btnSnipe').disabled = false;
+      document.getElementById('btnStop').disabled = true;
+      log('snipe finished — claimed ' + claimed + ' / taken ' + taken + ' / fail ' + fail, 'info');
     };
 
     fetch('/api/status').then(r => r.json()).then(s => {
-      if (s.hasEnvToken) log('env: DISCORD_TOKEN set', 'info');
-      if (s.hasEnvPassword) log('env: DISCORD_PASSWORD set', 'info');
-    }).catch(() => {});
+      if (s.hasEnvToken) log('env DISCORD_TOKEN is set', 'info');
+      else log('no env token — paste token on Snipe page', 'warn');
+      if (s.hasEnvPassword) log('env DISCORD_PASSWORD is set', 'info');
+      else log('no env password — paste password on Snipe page', 'warn');
+    }).catch(() => log('status check failed — site may still be waking', 'warn'));
   </script>
 </body>
 </html>
