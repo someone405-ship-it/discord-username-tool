@@ -13,7 +13,7 @@ const app = express();
 const ENV_TOKEN = (process.env.DISCORD_TOKEN || process.env.TOKEN || '').trim() || null;
 const ENV_PASSWORD = (process.env.DISCORD_PASSWORD || process.env.PASSWORD || '').trim() || null;
 
-app.use(express.json({ limit: '2mb' }));
+app.use(express.json({ limit: '8mb' }));
 app.use(express.static(path.join(__dirname, 'public')));
 
 app.get('/api/health', (_req, res) => res.json({ ok: true }));
@@ -28,16 +28,22 @@ app.post('/api/generate', (req, res) => {
     let presets = body.presets;
     if (!Array.isArray(presets) || !presets.length) presets = [body.preset || '3L'];
     presets = [...new Set(presets.map((p) => String(p).trim()).filter(Boolean))];
-    const limit = Math.min(Math.max(parseInt(body.limit, 10) || 300, 1), 5000);
+    const limit = Math.min(Math.max(parseInt(body.limit, 10) || 500, 1), 50000);
     const per = Math.max(1, Math.ceil(limit / presets.length));
     const all = [];
     const seen = new Set();
     for (const p of presets) {
       let list;
-      try { list = generate(p, per); }
-      catch (err) { return res.status(400).json({ ok: false, error: err.message, preset: p }); }
+      try {
+        list = generate(p, per);
+      } catch (err) {
+        return res.status(400).json({ ok: false, error: err.message, preset: p });
+      }
       for (const u of list) {
-        if (!seen.has(u)) { seen.add(u); all.push(u); }
+        if (!seen.has(u)) {
+          seen.add(u);
+          all.push(u);
+        }
       }
     }
     for (let i = all.length - 1; i > 0; i--) {
@@ -45,7 +51,7 @@ app.post('/api/generate', (req, res) => {
       [all[i], all[j]] = [all[j], all[i]];
     }
     const out = all.slice(0, limit);
-    res.json({ ok: true, count: out.length, presets, usernames: out });
+    res.json({ ok: true, count: out.length, requested: limit, presets, usernames: out });
   } catch (e) {
     res.status(400).json({ ok: false, error: e.message });
   }
@@ -61,9 +67,9 @@ function resolvePassword(p) {
 
 app.post('/api/check-one', async (req, res) => {
   try {
-    const { username, token = null } = req.body || {};
+    const { username, token = null, proxy = null } = req.body || {};
     if (!username) return res.status(400).json({ ok: false, error: 'username required' });
-    const result = await checkUsername(String(username).trim(), resolveToken(token));
+    const result = await checkUsername(String(username).trim(), resolveToken(token), proxy);
     res.json({ ok: true, result });
   } catch (e) {
     res.status(500).json({ ok: false, error: e.message });
@@ -72,14 +78,14 @@ app.post('/api/check-one', async (req, res) => {
 
 app.post('/api/claim', async (req, res) => {
   try {
-    const { username, token, password } = req.body || {};
+    const { username, token, password, proxy = null } = req.body || {};
     const resolvedToken = resolveToken(token);
     const resolvedPassword = resolvePassword(password);
     if (!username) return res.status(400).json({ ok: false, error: 'username required' });
     if (!resolvedToken) return res.status(400).json({ ok: false, error: 'token missing' });
     if (!resolvedPassword) return res.status(400).json({ ok: false, error: 'password missing' });
 
-    const check = await checkUsername(String(username).trim(), resolvedToken);
+    const check = await checkUsername(String(username).trim(), resolvedToken, proxy);
     if (check.status !== 'available') {
       return res.json({ ok: false, stage: 'check', check });
     }

@@ -2,6 +2,8 @@ import axios from 'axios';
 import fs from 'fs';
 import { fileURLToPath } from 'url';
 import path from 'path';
+import { HttpsProxyAgent } from 'https-proxy-agent';
+import { HttpProxyAgent } from 'http-proxy-agent';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const config = JSON.parse(fs.readFileSync(path.join(__dirname, '..', 'config.json'), 'utf8'));
@@ -18,7 +20,7 @@ function baseHeaders(token) {
     'X-Super-Properties': config.xSuperProperties,
     'X-Discord-Locale': 'en-US',
     Origin: 'https://discord.com',
-    Referer: 'https://discord.com/channels/@me',
+    Referer: 'https://discord.com/register',
     'Sec-Fetch-Dest': 'empty',
     'Sec-Fetch-Mode': 'cors',
     'Sec-Fetch-Site': 'same-origin',
@@ -26,7 +28,10 @@ function baseHeaders(token) {
     'Sec-Ch-Ua-Mobile': '?0',
     'Sec-Ch-Ua-Platform': '"Windows"'
   };
-  if (token) h.Authorization = token;
+  if (token) {
+    h.Authorization = token;
+    h.Referer = 'https://discord.com/channels/@me';
+  }
   return h;
 }
 
@@ -40,7 +45,27 @@ function parseTaken(data, status) {
   return null;
 }
 
-export async function checkUsername(username, token = null) {
+function normalizeProxy(raw) {
+  if (!raw) return null;
+  let p = String(raw).trim();
+  if (!p) return null;
+  if (!/^https?:\/\//i.test(p) && !/^socks/i.test(p)) {
+    p = 'http://' + p;
+  }
+  return p;
+}
+
+function agentFor(proxyUrl) {
+  if (!proxyUrl) return null;
+  try {
+    if (proxyUrl.startsWith('https://')) return new HttpsProxyAgent(proxyUrl);
+    return new HttpProxyAgent(proxyUrl);
+  } catch {
+    return null;
+  }
+}
+
+export async function checkUsername(username, token = null, proxy = null) {
   const clean = String(username || '').trim().toLowerCase();
   if (clean.length < 2 || clean.length > 32) {
     return { status: 'invalid', username: clean, reason: 'length must be 2-32', ms: 0 };
@@ -49,64 +74,67 @@ export async function checkUsername(username, token = null) {
     return { status: 'invalid', username: clean, reason: 'invalid characters', ms: 0 };
   }
 
+  const proxyUrl = normalizeProxy(proxy);
+  const agent = agentFor(proxyUrl);
+  const axiosOpts = {
+    timeout: config.checkTimeoutMs || 12000,
+    validateStatus: () => true,
+    ...(agent ? { httpAgent: agent, httpsAgent: agent, proxy: false } : {})
+  };
+
   const t0 = Date.now();
 
   if (token) {
     try {
-      const res = await axios.post(
-        POMELO_URL,
-        { username: clean },
-        { headers: baseHeaders(token), timeout: config.checkTimeoutMs || 12000, validateStatus: () => true }
-      );
+      const res = await axios.post(POMELO_URL, { username: clean }, {
+        ...axiosOpts,
+        headers: baseHeaders(token)
+      });
       const ms = Date.now() - t0;
       if (res.status === 429) {
         const retry = Number(res.headers?.['retry-after'] || res.data?.retry_after || 5);
-        return { status: 'error', username: clean, reason: 'rate limited', retryAfter: retry, ms, raw: res.data };
+        return { status: 'error', username: clean, reason: 'rate limited', retryAfter: retry, ms, raw: res.data, proxy: proxyUrl || null };
       }
       if (res.status === 200) {
         const taken = parseTaken(res.data, res.status);
-        if (taken === false) return { status: 'available', username: clean, ms, raw: res.data, method: 'pomelo' };
-        if (taken === true) return { status: 'taken', username: clean, ms, raw: res.data, method: 'pomelo' };
+        if (taken === false) return { status: 'available', username: clean, ms, method: 'pomelo', proxy: proxyUrl || null };
+        if (taken === true) return { status: 'taken', username: clean, ms, method: 'pomelo', proxy: proxyUrl || null };
         if (!res.data || Object.keys(res.data).length === 0) {
-          return { status: 'available', username: clean, ms, raw: res.data, method: 'pomelo' };
+          return { status: 'available', username: clean, ms, method: 'pomelo', proxy: proxyUrl || null };
         }
       }
       if (res.status === 400) {
         const taken = parseTaken(res.data, res.status);
-        if (taken === true) return { status: 'taken', username: clean, ms, raw: res.data, method: 'pomelo' };
-        const msg = res.data?.message || JSON.stringify(res.data || {}).slice(0, 120);
-        return { status: 'invalid', username: clean, reason: msg, ms, raw: res.data, method: 'pomelo' };
+        if (taken === true) return { status: 'taken', username: clean, ms, method: 'pomelo', proxy: proxyUrl || null };
+        return { status: 'invalid', username: clean, reason: res.data?.message || 'bad request', ms, method: 'pomelo' };
       }
-    } catch (_) {}
+    } catch (err) {}
   }
 
   try {
-    const res = await axios.post(
-      CHECK_URL,
-      { username: clean },
-      { headers: baseHeaders(null), timeout: config.checkTimeoutMs || 12000, validateStatus: () => true }
-    );
+    const res = await axios.post(CHECK_URL, { username: clean }, {
+      ...axiosOpts,
+      headers: baseHeaders(null)
+    });
     const ms = Date.now() - t0;
     if (res.status === 429) {
       const retry = Number(res.headers?.['retry-after'] || res.data?.retry_after || 5);
-      return { status: 'error', username: clean, reason: 'rate limited', retryAfter: retry, ms, raw: res.data };
+      return { status: 'error', username: clean, reason: 'rate limited', retryAfter: retry, ms, raw: res.data, proxy: proxyUrl || null };
     }
     if (res.status === 200 && typeof res.data?.taken === 'boolean') {
-      return res.data.taken
-        ? { status: 'taken', username: clean, ms, raw: res.data, method: 'unauth' }
-        : { status: 'available', username: clean, ms, raw: res.data, method: 'unauth' };
+      return {
+        status: res.data.taken ? 'taken' : 'available',
+        username: clean,
+        ms,
+        method: 'unauth',
+        proxy: proxyUrl || null
+      };
     }
     if (res.status === 400) {
-      return { status: 'invalid', username: clean, reason: res.data?.message || 'bad request', ms, raw: res.data };
+      return { status: 'invalid', username: clean, reason: res.data?.message || 'bad request', ms };
     }
-    return {
-      status: 'error',
-      username: clean,
-      reason: res.data?.message || `http ${res.status}`,
-      ms,
-      raw: res.data
-    };
+    return { status: 'error', username: clean, reason: res.data?.message || `http ${res.status}`, ms };
   } catch (err) {
-    return { status: 'error', username: clean, reason: err.message, ms: Date.now() - t0 };
+    return { status: 'error', username: clean, reason: err.message, ms: Date.now() - t0, proxy: proxyUrl || null };
   }
 }
