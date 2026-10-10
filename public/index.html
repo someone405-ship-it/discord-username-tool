@@ -118,9 +118,9 @@
 
     <div class="card">
       <div class="section-label">Claim (optional)</div>
-      <p class="hint">Needs your Discord user token + account password. Only claim names that show AVAILABLE. See README for how to get your token.</p>
-      <input id="token" type="password" placeholder="Discord token" autocomplete="off" />
-      <input id="password" type="password" placeholder="Account password" autocomplete="off" />
+      <p class="hint">Token & password can come from Render Environment (DISCORD_TOKEN / DISCORD_PASSWORD) or the boxes below. Only claims if the name is AVAILABLE.</p>
+      <input id="token" type="password" placeholder="Discord token (optional if set on Render)" autocomplete="off" />
+      <input id="password" type="password" placeholder="Account password (optional if set on Render)" autocomplete="off" />
       <input id="claimName" placeholder="Username to claim" />
       <button class="btn primary" id="btnClaim" style="margin-top:4px">Check + Claim</button>
     </div>
@@ -227,12 +227,15 @@
       const username = document.getElementById('claimName').value.trim();
       const token = document.getElementById('token').value.trim();
       const password = document.getElementById('password').value;
-      if (!username || !token || !password) return log('need username + token + password', 'warn');
+      if (!username) return log('need a username to claim', 'warn');
       log('claiming @' + username + '…', 'info');
       try {
+        const body = { username };
+        if (token) body.token = token;
+        if (password) body.password = password;
         const r = await fetch('/api/claim', {
           method: 'POST', headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ username, token, password })
+          body: JSON.stringify(body)
         }).then(x => x.json());
         if (r.ok) log('CLAIMED @' + username, 'ok');
         else {
@@ -245,6 +248,11 @@
     document.getElementById('oneName').addEventListener('keydown', e => {
       if (e.key === 'Enter') document.getElementById('btnOne').click();
     });
+
+    fetch('/api/status').then(r=>r.json()).then(s=>{
+      if (s.hasEnvToken) log('Render env: DISCORD_TOKEN is set', 'info');
+      if (s.hasEnvPassword) log('Render env: DISCORD_PASSWORD is set', 'info');
+    }).catch(()=>{});
   </script>
 </body>
 </html>
