@@ -1,0 +1,18 @@
+{
+  "name": "discord-username-tool",
+  "version": "1.0.0",
+  "description": "Discord username generator, live availability checker, and optional claimer (web UI)",
+  "main": "server.js",
+  "type": "module",
+  "scripts": {
+    "start": "node server.js",
+    "web": "node server.js"
+  },
+  "dependencies": {
+    "axios": "^1.7.9",
+    "express": "^4.21.2"
+  },
+  "engines": {
+    "node": ">=18"
+  }
+}
