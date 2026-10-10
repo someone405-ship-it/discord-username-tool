@@ -19,10 +19,7 @@ app.get('/api/presets', (_req, res) => {
 });
 
 app.get('/api/status', (_req, res) => {
-  res.json({
-    ok: true,
-    hasEnvToken: Boolean(ENV_TOKEN)
-  });
+  res.json({ ok: true, hasEnvToken: Boolean(ENV_TOKEN) });
 });
 
 app.post('/api/generate', (req, res) => {
@@ -64,15 +61,18 @@ function resolveToken(bodyToken) {
 
 app.post('/api/check', async (req, res) => {
   try {
-    const { usernames = [], token = null } = req.body || {};
+    const { usernames = [], token = null, rps = 5, mode = 'fixed' } = req.body || {};
     if (!Array.isArray(usernames) || !usernames.length) {
       return res.status(400).json({ ok: false, error: 'usernames array required' });
     }
     const capped = usernames.map((u) => String(u).trim()).filter(Boolean).slice(0, 500);
+    const safeRps = Math.min(20, Math.max(1, Number(rps) || 5));
+    const safeMode = mode === 'auto' ? 'auto' : 'fixed';
     const results = await checkMany(capped, {
       token: resolveToken(token),
-      concurrency: config.maxConcurrentChecks || 3,
-      delayMs: config.delayBetweenChecksMs || 120
+      rps: safeRps,
+      mode: safeMode,
+      concurrency: 1
     });
     const summary = {
       available: results.filter((r) => r.status === 'available').length,
@@ -80,7 +80,7 @@ app.post('/api/check', async (req, res) => {
       invalid: results.filter((r) => r.status === 'invalid').length,
       error: results.filter((r) => r.status === 'error').length
     };
-    res.json({ ok: true, summary, results });
+    res.json({ ok: true, summary, results, rps: safeRps, mode: safeMode });
   } catch (e) {
     res.status(500).json({ ok: false, error: e.message });
   }
