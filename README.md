@@ -1,19 +1,19 @@
 # Discord Username Tool
 
-Web app: **generate** short Discord usernames → **check live availability** → **optionally claim** with your own token + password.
+Web app: **generate** short Discord usernames → **check live availability** → **optionally claim** with your token + password.
 
-No auto-snipe loop. You pick the name, then claim if you want.
+No auto-snipe loop. Checks first — if the name is taken, it does **not** claim.
 
 ## Features
 
 - Generator: 2C / 2L / 2N / 3C / 3L / 3N / 4N / 4L / 4C
 - Patterns: Semi 3L, Dotted, _Repeaters, Letter Repeaters, 4L/5L Pronounceable, Faces
 - Wordlists: EN / FR
-- Live check via Discord `username-attempt-unauthed`
-- Optional claim via `PATCH /users/@me` (token + account password)
-- Clean single-page UI
+- Live check via Discord API
+- Optional claim (token + password)
+- **Render env support:** `DISCORD_TOKEN` + `DISCORD_PASSWORD`
 
-## Run
+## Run locally
 
 ```bash
 git clone https://github.com/someone405-ship-it/discord-username-tool.git
@@ -24,77 +24,54 @@ npm start
 
 Open **http://localhost:3847**
 
-## How to get your Discord token (step by step)
+## Deploy on Render
 
-Only use **your own** account token. Never share it.
+1. [render.com](https://render.com) → **New** → **Web Service**
+2. Connect repo: `someone405-ship-it/discord-username-tool`
+3. **Build Command:** `npm install`
+4. **Start Command:** `npm start`
+5. Open **Environment** and add:
 
-### Method 1 — Browser DevTools (recommended)
+| Key | Value |
+|-----|--------|
+| `DISCORD_TOKEN` | your Discord user token |
+| `DISCORD_PASSWORD` | your Discord account password |
 
-1. Open **https://discord.com/app** in Chrome or Edge and log in.
-2. Press **F12** (or right-click → Inspect) to open DevTools.
-3. Go to the **Network** tab.
-4. In the filter box type: **`api`**
-5. Click any channel or refresh the page so requests appear.
-6. Click a request to **`/api/v9/`** or **`/api/v10/`** (for example `science` or `users/@me`).
-7. In the right panel open **Headers**.
-8. Scroll to **Request Headers**.
-9. Find **`authorization`**.
-10. Copy the full value next to it (long string, sometimes starts with `mfa.`).
-11. That string is your **token**. Paste it into the Token field in the tool.
+6. Deploy → open the Render URL
 
-**Notes**
-- Do **not** copy the word `authorization` — only the value.
-- Token looks like: `mfa.ABcd...` or a long base64-looking string.
-- If you log out or change password, the token can become invalid — grab a fresh one.
+With env vars set, you can leave the token/password boxes empty in the UI. You can still override them by pasting in the form.
 
-### Method 2 — Console (quick)
+**Never** put the token in the GitHub repo — only in Render Environment.
 
-1. Open Discord in the browser, logged in.
-2. Press **F12** → **Console**.
-3. Paste this and press Enter:
+## Claim safety
 
-```js
-(webpackChunkdiscord_app.push([[''],{},e=>{m=[];for(let c in e.c)m.push(e.c[c])}]),m).find(m=>m?.exports?.default?.getToken!==void 0).exports.default.getToken()
-```
+1. Tool checks the name live on Discord.
+2. If status is not `available` → **stops**, does not claim.
+3. Only if available → sends the claim with token + password.
 
-4. The returned string is your token. Copy it.
+## How to get your Discord token
 
-If that snippet fails (Discord updates often), use Method 1 instead — Network tab always works.
+### Browser (PC)
 
-### Password
+1. Open https://discord.com/app and log in  
+2. F12 → **Network** → filter `api`  
+3. Click a request like `users/@me`  
+4. **Headers** → **Request Headers** → **authorization** → copy the value  
 
-- The **password** field is the same password you use to log into Discord (email + password).
-- Discord requires it when changing username. Forgot it → reset via Discord’s official “Forgot Password”.
+### Mobile (Kiwi Browser)
 
-## Claim flow
+Three dots → Developer tools → Network → filter `api` → open a request → Headers → authorization → copy value  
 
-1. Generate or type usernames.
-2. Click **Check availability**.
-3. Available names stay in the box / show in the log.
-4. Paste token + password.
-5. Type the exact available username.
-6. Click **Check + Claim**.
+Password = the same password you use to log into Discord.
 
 ## API
 
 | Method | Path | Body |
 |--------|------|------|
+| GET | `/api/status` | — shows if env token/password are set |
 | POST | `/api/generate` | `{ "preset": "3L", "limit": 1500 }` |
 | POST | `/api/check` | `{ "usernames": ["a","b"] }` |
 | POST | `/api/check-one` | `{ "username": "name" }` |
-| POST | `/api/claim` | `{ "username", "token", "password" }` |
+| POST | `/api/claim` | `{ "username", "token?", "password?" }` |
 
-## Deploy
-
-```bash
-npm install
-npm start
-```
-
-Set `PORT` if your host requires it (Railway, Render, Fly, VPS).
-
-## Safety
-
-- Never commit tokens or passwords.
-- Never paste tokens into public chats.
-- Rate limits are real — don’t spam huge batches.
+Token/password in the body override env. If omitted, env is used.
