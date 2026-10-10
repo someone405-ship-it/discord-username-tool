@@ -14,39 +14,58 @@
     body {
       font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, sans-serif;
       background: radial-gradient(900px 500px at 50% -15%, #1a1635 0%, var(--bg) 50%);
-      color: var(--text); min-height: 100vh; padding: 20px 14px 48px;
+      color: var(--text); min-height: 100vh; padding: 16px 12px 40px;
     }
-    .wrap { max-width: 680px; margin: 0 auto; }
-    h1 { font-size: 1.5rem; font-weight: 700; letter-spacing: -0.02em; }
-    .sub { color: var(--muted); font-size: 0.88rem; margin: 4px 0 20px; }
+    .wrap { max-width: 720px; margin: 0 auto; }
+    h1 { font-size: 1.4rem; font-weight: 700; letter-spacing: -0.02em; }
+    .sub { color: var(--muted); font-size: 0.85rem; margin: 4px 0 16px; }
+    .tabs {
+      display: flex; gap: 6px; margin-bottom: 14px;
+      background: #101018; border: 1px solid var(--border); border-radius: 14px; padding: 5px;
+    }
+    .tab {
+      flex: 1; text-align: center; padding: 11px 8px; border-radius: 10px;
+      border: none; background: transparent; color: var(--muted);
+      font-size: 0.9rem; font-weight: 600; cursor: pointer;
+    }
+    .tab.active {
+      background: linear-gradient(135deg, var(--accent), #5a4fcf);
+      color: #fff; box-shadow: 0 4px 14px rgba(108,92,231,.35);
+    }
+    .page { display: none; }
+    .page.active { display: block; }
     .card {
       background: var(--card); border: 1px solid var(--border); border-radius: 18px;
-      padding: 18px; margin-bottom: 14px; box-shadow: 0 8px 32px rgba(0,0,0,.25);
+      padding: 16px; margin-bottom: 12px; box-shadow: 0 8px 32px rgba(0,0,0,.25);
     }
     .section-label {
-      font-size: 0.7rem; text-transform: uppercase; letter-spacing: .08em;
-      color: var(--muted); margin-bottom: 10px; font-weight: 600;
+      font-size: 0.68rem; text-transform: uppercase; letter-spacing: .08em;
+      color: var(--muted); margin-bottom: 8px; font-weight: 600;
     }
-    .row { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 10px; }
-    .btn {
+    .row { display: flex; flex-wrap: wrap; gap: 7px; margin-bottom: 10px; }
+    .chip {
       border: 1px solid var(--border); background: #1c1c28; color: var(--text);
-      padding: 9px 13px; border-radius: 11px; font-size: 0.82rem; font-weight: 500;
-      cursor: pointer; transition: .12s; user-select: none;
+      padding: 8px 12px; border-radius: 10px; font-size: 0.8rem; font-weight: 500;
+      cursor: pointer; user-select: none; transition: .12s;
     }
-    .btn:hover { border-color: var(--accent2); background: #242436; }
-    .btn:active { transform: scale(0.97); }
-    .btn.active {
+    .chip:hover { border-color: var(--accent2); }
+    .chip.on {
       background: linear-gradient(135deg, var(--accent), #5a4fcf);
       border-color: transparent; color: #fff;
-      box-shadow: 0 4px 14px rgba(108,92,231,.35);
+      box-shadow: 0 3px 12px rgba(108,92,231,.3);
     }
+    .btn {
+      border: 1px solid var(--border); background: #1c1c28; color: var(--text);
+      padding: 10px 14px; border-radius: 11px; font-size: 0.85rem; font-weight: 600;
+      cursor: pointer; transition: .12s;
+    }
+    .btn:hover { border-color: var(--accent2); background: #242436; }
     .btn.primary {
       background: linear-gradient(135deg, var(--accent), #5a4fcf);
-      border-color: transparent; color: #fff; font-weight: 600;
+      border-color: transparent; color: #fff;
     }
-    .btn.ghost { background: transparent; }
     .btn.green { border-color: #1e4a38; color: var(--green); background: #122a20; }
-    .btn.green:hover { background: #183528; }
+    .btn.ghost { background: transparent; color: var(--muted); }
     input, textarea {
       width: 100%; background: #0e0e16; border: 1px solid var(--border);
       border-radius: 12px; color: var(--text); padding: 11px 13px;
@@ -54,11 +73,11 @@
     }
     input:focus, textarea:focus { border-color: var(--accent); }
     textarea {
-      min-height: 140px; font-family: ui-monospace, Menlo, Consolas, monospace;
+      min-height: 180px; font-family: ui-monospace, Menlo, Consolas, monospace;
       font-size: 0.8rem; line-height: 1.45; resize: vertical;
     }
-    .controls { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; margin-top: 12px; }
-    .controls input[type=number] { width: 100px; margin: 0; }
+    .controls { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; margin-top: 10px; }
+    .controls input[type=number] { width: 110px; margin: 0; }
     .stats {
       display: flex; gap: 14px; flex-wrap: wrap; margin-top: 12px; padding-top: 12px;
       border-top: 1px solid var(--border);
@@ -67,7 +86,7 @@
     .stat b { color: var(--text); font-weight: 600; }
     .stat.avail b { color: var(--green); }
     .log {
-      max-height: 240px; overflow-y: auto;
+      max-height: 280px; overflow-y: auto;
       font-family: ui-monospace, Menlo, Consolas, monospace; font-size: 0.76rem;
       line-height: 1.5; background: #0a0a10; border-radius: 12px;
       padding: 12px; border: 1px solid var(--border);
@@ -77,83 +96,95 @@
     .log .info { color: var(--blue); }
     .single { display: flex; gap: 8px; }
     .single input { flex: 1; margin: 0; }
-    .hint { font-size: 0.75rem; color: var(--muted); margin-bottom: 10px; line-height: 1.4; }
-    footer { text-align: center; color: var(--muted); font-size: 0.75rem; margin-top: 18px; }
+    .hint { font-size: 0.75rem; color: var(--muted); margin-bottom: 10px; line-height: 1.45; }
+    .stack-badge {
+      display: inline-block; background: #1e1a3a; border: 1px solid #3d3580;
+      color: var(--accent2); font-size: 0.72rem; padding: 3px 8px; border-radius: 8px;
+      margin: 2px 4px 2px 0;
+    }
+    footer { text-align: center; color: var(--muted); font-size: 0.72rem; margin-top: 16px; }
   </style>
 </head>
 <body>
   <div class="wrap">
     <h1>Discord Username Tool</h1>
-    <p class="sub">Generate · live check · optional claim with your token</p>
+    <p class="sub">Setup names · check live · no auto claim</p>
 
-    <div class="card">
-      <div class="section-label">Short combinations</div>
-      <div class="row" id="shortBtns"></div>
-      <div class="section-label">Patterns</div>
-      <div class="row" id="patternBtns"></div>
-      <div class="section-label">Wordlists</div>
-      <div class="row" id="wordBtns"></div>
-      <div class="controls">
-        <input id="limit" type="number" value="1500" min="10" max="50000" />
-        <button class="btn primary" id="btnGen">Generate</button>
-        <button class="btn ghost" id="btnClear">Clear</button>
-        <button class="btn green" id="btnCheck">Check availability</button>
+    <div class="tabs">
+      <button class="tab active" data-page="setup" id="tabSetup">1 · Setup</button>
+      <button class="tab" data-page="start" id="tabStart">2 · Start</button>
+    </div>
+
+    <div class="page active" id="page-setup">
+      <div class="card">
+        <div class="section-label">Stack presets (tap multiple)</div>
+        <p class="hint">Select one or more types — e.g. 2L + 3L + Dotted. They merge into one list.</p>
+        <div class="section-label">Short</div>
+        <div class="row" id="shortBtns"></div>
+        <div class="section-label">Patterns</div>
+        <div class="row" id="patternBtns"></div>
+        <div class="section-label">Wordlists</div>
+        <div class="row" id="wordBtns"></div>
+        <div id="stackPreview" style="margin-top:6px;min-height:24px"></div>
+        <div class="controls">
+          <input id="limit" type="number" value="1500" min="10" max="50000" title="Max names" />
+          <button class="btn primary" id="btnGen">Generate stack</button>
+          <button class="btn ghost" id="btnClearSel">Clear selection</button>
+        </div>
+        <div class="stats">
+          <span class="stat">selected <b id="cSel">0</b></span>
+          <span class="stat">generated <b id="cGen">0</b></span>
+        </div>
       </div>
-      <div class="stats">
-        <span class="stat">generated <b id="cGen">0</b></span>
-        <span class="stat avail">available <b id="cAvail">0</b></span>
-        <span class="stat">taken <b id="cTaken">0</b></span>
-        <span class="stat">invalid <b id="cInv">0</b></span>
+      <div class="card">
+        <div class="section-label">Generated names (edit if you want)</div>
+        <textarea id="names" placeholder="Generate on Setup, or paste names here…"></textarea>
+        <button class="btn primary" id="btnGoStart" style="width:100%;margin-top:4px">Go to Start →</button>
       </div>
     </div>
 
-    <div class="card">
-      <div class="section-label">Usernames (one per line)</div>
-      <textarea id="names" placeholder="coolname&#10;x_x&#10;nova"></textarea>
-      <div class="single" style="margin-top:8px">
-        <input id="oneName" placeholder="Quick check one name…" />
-        <button class="btn primary" id="btnOne">Check</button>
+    <div class="page" id="page-start">
+      <div class="card">
+        <div class="section-label">Names to check</div>
+        <p class="hint">Runs live Discord availability. Taken names are left alone — nothing is claimed.</p>
+        <textarea id="namesStart" placeholder="Names appear here from Setup…"></textarea>
+        <div class="controls">
+          <button class="btn green" id="btnCheck">Start check</button>
+          <button class="btn ghost" id="btnKeepAvail">Keep available only</button>
+          <button class="btn ghost" id="btnBackSetup">← Setup</button>
+        </div>
+        <div class="stats">
+          <span class="stat avail">available <b id="cAvail">0</b></span>
+          <span class="stat">taken <b id="cTaken">0</b></span>
+          <span class="stat">invalid <b id="cInv">0</b></span>
+        </div>
+      </div>
+      <div class="card">
+        <div class="section-label">Quick one name</div>
+        <div class="single">
+          <input id="oneName" placeholder="Check one username…" />
+          <button class="btn primary" id="btnOne">Check</button>
+        </div>
+      </div>
+      <div class="card">
+        <div class="section-label">Log</div>
+        <div class="log" id="log"></div>
       </div>
     </div>
 
-    <div class="card">
-      <div class="section-label">Claim (optional)</div>
-      <p class="hint">Token & password can come from Render Environment (DISCORD_TOKEN / DISCORD_PASSWORD) or the boxes below. Only claims if the name is AVAILABLE.</p>
-      <input id="token" type="password" placeholder="Discord token (optional if set on Render)" autocomplete="off" />
-      <input id="password" type="password" placeholder="Account password (optional if set on Render)" autocomplete="off" />
-      <input id="claimName" placeholder="Username to claim" />
-      <button class="btn primary" id="btnClaim" style="margin-top:4px">Check + Claim</button>
-    </div>
-
-    <div class="card">
-      <div class="section-label">Log</div>
-      <div class="log" id="log"></div>
-    </div>
-    <footer>Live Discord API · generator + checker + claim</footer>
+    <footer>Live Discord API · generator + checker · no claim</footer>
   </div>
 
   <script>
     const short = [['2C','2C'],['2L','2L'],['2N','2N'],['3C','3C'],['3L','3L'],['3N','3N'],['4N','4N'],['4L','4L'],['4C','4C']];
-    const patterns = [['Semi3L','Semi 3L'],['Dotted','Dotted'],['Repeaters','_Repeaters'],['LetterRepeaters','Letter Repeaters'],['4LPronounceable','4L Pronounceable'],['5LPronounceable','5L Pronounceable'],['Faces','Faces (X_X)']];
+    const patterns = [['Semi3L','Semi 3L'],['Dotted','Dotted'],['Repeaters','_Repeaters'],['LetterRepeaters','Letter Repeaters'],['4LPronounceable','4L Pron'],['5LPronounceable','5L Pron'],['Faces','Faces']];
     const words = [['WordsEN','Words EN'],['WordsFR','Words FR']];
-    let selected = '3L';
-    const namesEl = document.getElementById('names');
-    const logEl = document.getElementById('log');
 
-    function mkBtn(id, label, group) {
-      const b = document.createElement('button');
-      b.className = 'btn' + (id === selected ? ' active' : '');
-      b.textContent = label;
-      b.onclick = () => {
-        selected = id;
-        document.querySelectorAll('.btn').forEach(x => { if (!x.id) x.classList.remove('active'); });
-        b.classList.add('active');
-      };
-      group.appendChild(b);
-    }
-    short.forEach(([id,l]) => mkBtn(id,l,document.getElementById('shortBtns')));
-    patterns.forEach(([id,l]) => mkBtn(id,l,document.getElementById('patternBtns')));
-    words.forEach(([id,l]) => mkBtn(id,l,document.getElementById('wordBtns')));
+    const selected = new Set(['3L']);
+    const namesEl = document.getElementById('names');
+    const namesStart = document.getElementById('namesStart');
+    const logEl = document.getElementById('log');
+    let lastResults = [];
 
     function log(msg, cls='') {
       const d = document.createElement('div');
@@ -162,53 +193,115 @@
       logEl.prepend(d);
     }
 
+    function showPage(id) {
+      document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+      document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+      document.getElementById('page-' + id).classList.add('active');
+      document.querySelector('.tab[data-page="'+id+'"]').classList.add('active');
+      if (id === 'start') {
+        if (!namesStart.value.trim() && namesEl.value.trim()) {
+          namesStart.value = namesEl.value;
+        }
+      }
+    }
+    document.getElementById('tabSetup').onclick = () => showPage('setup');
+    document.getElementById('tabStart').onclick = () => showPage('start');
+    document.getElementById('btnGoStart').onclick = () => {
+      namesStart.value = namesEl.value;
+      showPage('start');
+    };
+    document.getElementById('btnBackSetup').onclick = () => showPage('setup');
+
+    function refreshStack() {
+      document.getElementById('cSel').textContent = selected.size;
+      const box = document.getElementById('stackPreview');
+      box.innerHTML = '';
+      if (!selected.size) {
+        box.innerHTML = '<span class="hint">No presets selected</span>';
+        return;
+      }
+      [...selected].forEach(id => {
+        const s = document.createElement('span');
+        s.className = 'stack-badge';
+        s.textContent = id;
+        box.appendChild(s);
+      });
+    }
+
+    function mkChip(id, label, group) {
+      const b = document.createElement('button');
+      b.type = 'button';
+      b.className = 'chip' + (selected.has(id) ? ' on' : '');
+      b.textContent = label;
+      b.onclick = () => {
+        if (selected.has(id)) selected.delete(id);
+        else selected.add(id);
+        b.classList.toggle('on', selected.has(id));
+        refreshStack();
+      };
+      group.appendChild(b);
+    }
+    short.forEach(([id,l]) => mkChip(id,l,document.getElementById('shortBtns')));
+    patterns.forEach(([id,l]) => mkChip(id,l,document.getElementById('patternBtns')));
+    words.forEach(([id,l]) => mkChip(id,l,document.getElementById('wordBtns')));
+    refreshStack();
+
+    document.getElementById('btnClearSel').onclick = () => {
+      selected.clear();
+      document.querySelectorAll('.chip').forEach(c => c.classList.remove('on'));
+      refreshStack();
+    };
+
     document.getElementById('btnGen').onclick = async () => {
+      if (!selected.size) return log('pick at least one preset', 'warn');
       const limit = document.getElementById('limit').value;
-      log('generating ' + selected + ' × ' + limit + '…', 'info');
+      const presets = [...selected];
+      log('generating stack [' + presets.join(' + ') + '] \u00d7 ' + limit + '\u2026', 'info');
       try {
         const r = await fetch('/api/generate', {
           method: 'POST', headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ preset: selected, limit })
+          body: JSON.stringify({ presets, limit })
         }).then(x => x.json());
         if (!r.ok) return log('error: ' + r.error, 'bad');
         namesEl.value = r.usernames.join('\n');
         document.getElementById('cGen').textContent = r.count;
-        log('generated ' + r.count + ' names', 'ok');
+        log('generated ' + r.count + ' from ' + presets.join('+'), 'ok');
       } catch (e) { log('network error: ' + e.message, 'bad'); }
     };
 
-    document.getElementById('btnClear').onclick = () => {
-      namesEl.value = ''; logEl.innerHTML = '';
-      ['cGen','cAvail','cTaken','cInv'].forEach(id => document.getElementById(id).textContent = '0');
-    };
-
     document.getElementById('btnCheck').onclick = async () => {
-      const list = namesEl.value.split(/\n/).map(s => s.trim()).filter(Boolean);
-      if (!list.length) return log('no names to check', 'warn');
-      log('checking ' + list.length + ' names…', 'info');
+      const list = namesStart.value.split(/\n/).map(s => s.trim()).filter(Boolean);
+      if (!list.length) return log('no names \u2014 generate on Setup first', 'warn');
+      log('checking ' + list.length + ' names\u2026', 'info');
       try {
         const r = await fetch('/api/check', {
           method: 'POST', headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ usernames: list })
         }).then(x => x.json());
         if (!r.ok) return log('error: ' + r.error, 'bad');
+        lastResults = r.results || [];
         document.getElementById('cAvail').textContent = r.summary.available;
         document.getElementById('cTaken').textContent = r.summary.taken;
         document.getElementById('cInv').textContent = r.summary.invalid;
-        const avail = [];
         r.results.forEach(x => {
-          if (x.status === 'available') { avail.push(x.username); log('AVAILABLE  @' + x.username, 'ok'); }
+          if (x.status === 'available') log('AVAILABLE  @' + x.username, 'ok');
           else if (x.status === 'invalid') log('invalid    @' + x.username + '  ' + (x.reason || ''), 'warn');
         });
-        if (avail.length) { namesEl.value = avail.join('\n'); log('kept ' + avail.length + ' available', 'ok'); }
-        else log('none available in this batch', 'taken');
+        log('done \u2014 available: ' + r.summary.available + ' / taken: ' + r.summary.taken, 'info');
       } catch (e) { log('network error: ' + e.message, 'bad'); }
+    };
+
+    document.getElementById('btnKeepAvail').onclick = () => {
+      const avail = lastResults.filter(x => x.status === 'available').map(x => x.username);
+      if (!avail.length) return log('run Start check first', 'warn');
+      namesStart.value = avail.join('\n');
+      log('kept ' + avail.length + ' available', 'ok');
     };
 
     document.getElementById('btnOne').onclick = async () => {
       const username = document.getElementById('oneName').value.trim();
       if (!username) return log('type a name first', 'warn');
-      log('checking @' + username + '…', 'info');
+      log('checking @' + username + '\u2026', 'info');
       try {
         const r = await fetch('/api/check-one', {
           method: 'POST', headers: { 'Content-Type': 'application/json' },
@@ -223,36 +316,9 @@
       } catch (e) { log('network error: ' + e.message, 'bad'); }
     };
 
-    document.getElementById('btnClaim').onclick = async () => {
-      const username = document.getElementById('claimName').value.trim();
-      const token = document.getElementById('token').value.trim();
-      const password = document.getElementById('password').value;
-      if (!username) return log('need a username to claim', 'warn');
-      log('claiming @' + username + '…', 'info');
-      try {
-        const body = { username };
-        if (token) body.token = token;
-        if (password) body.password = password;
-        const r = await fetch('/api/claim', {
-          method: 'POST', headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(body)
-        }).then(x => x.json());
-        if (r.ok) log('CLAIMED @' + username, 'ok');
-        else {
-          const detail = r.result?.message || r.result?.error || r.check?.status || r.error || JSON.stringify(r);
-          log('failed: ' + detail, 'bad');
-        }
-      } catch (e) { log('network error: ' + e.message, 'bad'); }
-    };
-
     document.getElementById('oneName').addEventListener('keydown', e => {
       if (e.key === 'Enter') document.getElementById('btnOne').click();
     });
-
-    fetch('/api/status').then(r=>r.json()).then(s=>{
-      if (s.hasEnvToken) log('Render env: DISCORD_TOKEN is set', 'info');
-      if (s.hasEnvPassword) log('Render env: DISCORD_PASSWORD is set', 'info');
-    }).catch(()=>{});
   </script>
 </body>
 </html>
