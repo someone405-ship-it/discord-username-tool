@@ -16,14 +16,10 @@ const ENV_PASSWORD = (process.env.DISCORD_PASSWORD || process.env.PASSWORD || ''
 app.use(express.json({ limit: '2mb' }));
 app.use(express.static(path.join(__dirname, 'public')));
 
+app.get('/api/health', (_req, res) => res.json({ ok: true }));
 app.get('/api/presets', (_req, res) => res.json({ presets: PRESET_NAMES }));
-
 app.get('/api/status', (_req, res) => {
-  res.json({
-    ok: true,
-    hasEnvToken: Boolean(ENV_TOKEN),
-    hasEnvPassword: Boolean(ENV_PASSWORD)
-  });
+  res.json({ ok: true, hasEnvToken: Boolean(ENV_TOKEN), hasEnvPassword: Boolean(ENV_PASSWORD) });
 });
 
 app.post('/api/generate', (req, res) => {
@@ -32,29 +28,24 @@ app.post('/api/generate', (req, res) => {
     let presets = body.presets;
     if (!Array.isArray(presets) || !presets.length) presets = [body.preset || '3L'];
     presets = [...new Set(presets.map((p) => String(p).trim()).filter(Boolean))];
-    const limit = Math.min(Math.max(parseInt(body.limit, 10) || 500, 1), 10000);
+    const limit = Math.min(Math.max(parseInt(body.limit, 10) || 300, 1), 5000);
     const per = Math.max(1, Math.ceil(limit / presets.length));
     const all = [];
     const seen = new Set();
     for (const p of presets) {
       let list;
-      try {
-        list = generate(p, per);
-      } catch (err) {
-        return res.status(400).json({ ok: false, error: err.message, preset: p });
-      }
+      try { list = generate(p, per); }
+      catch (err) { return res.status(400).json({ ok: false, error: err.message, preset: p }); }
       for (const u of list) {
-        if (!seen.has(u)) {
-          seen.add(u);
-          all.push(u);
-        }
+        if (!seen.has(u)) { seen.add(u); all.push(u); }
       }
     }
     for (let i = all.length - 1; i > 0; i--) {
       const j = Math.floor(Math.random() * (i + 1));
       [all[i], all[j]] = [all[j], all[i]];
     }
-    res.json({ ok: true, count: all.slice(0, limit).length, presets, usernames: all.slice(0, limit) });
+    const out = all.slice(0, limit);
+    res.json({ ok: true, count: out.length, presets, usernames: out });
   } catch (e) {
     res.status(400).json({ ok: false, error: e.message });
   }
@@ -85,25 +76,15 @@ app.post('/api/claim', async (req, res) => {
     const resolvedToken = resolveToken(token);
     const resolvedPassword = resolvePassword(password);
     if (!username) return res.status(400).json({ ok: false, error: 'username required' });
-    if (!resolvedToken) {
-      return res.status(400).json({ ok: false, error: 'token missing — set DISCORD_TOKEN env or paste token' });
-    }
-    if (!resolvedPassword) {
-      return res.status(400).json({ ok: false, error: 'password missing — set DISCORD_PASSWORD env or paste password' });
-    }
+    if (!resolvedToken) return res.status(400).json({ ok: false, error: 'token missing' });
+    if (!resolvedPassword) return res.status(400).json({ ok: false, error: 'password missing' });
 
     const check = await checkUsername(String(username).trim(), resolvedToken);
     if (check.status !== 'available') {
       return res.json({ ok: false, stage: 'check', check });
     }
-
     const claim = await claimUsername(String(username).trim(), resolvedToken, resolvedPassword);
-    res.json({
-      ok: !!claim.success,
-      stage: 'claim',
-      check,
-      claim
-    });
+    res.json({ ok: !!claim.success, stage: 'claim', check, claim });
   } catch (e) {
     res.status(500).json({ ok: false, error: e.message });
   }
