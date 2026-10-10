@@ -1,422 +1,267 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
-  <title>Discord Username Sniper</title>
-  <style>
-    :root {
-      --bg: #0b0b10; --card: #14141c; --border: #262636; --text: #f0f0f8;
-      --muted: #8b8ba0; --accent: #6c5ce7; --accent2: #a29bfe;
-      --green: #00d68f; --red: #ff6b81; --yellow: #ffc048; --blue: #54a0ff;
-    }
-    * { box-sizing: border-box; margin: 0; padding: 0; }
-    body {
-      font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, sans-serif;
-      background: radial-gradient(900px 500px at 50% -15%, #1a1635 0%, var(--bg) 50%);
-      color: var(--text); min-height: 100vh; padding: 16px 12px 40px;
-    }
-    .wrap { max-width: 720px; margin: 0 auto; }
-    h1 { font-size: 1.35rem; font-weight: 700; }
-    .sub { color: var(--muted); font-size: 0.85rem; margin: 4px 0 14px; }
-    .tabs {
-      display: flex; gap: 6px; margin-bottom: 14px;
-      background: #101018; border: 1px solid var(--border); border-radius: 14px; padding: 5px;
-    }
-    .tab {
-      flex: 1; text-align: center; padding: 11px 8px; border-radius: 10px;
-      border: none; background: transparent; color: var(--muted);
-      font-size: 0.9rem; font-weight: 600; cursor: pointer;
-    }
-    .tab.active {
-      background: linear-gradient(135deg, var(--accent), #5a4fcf);
-      color: #fff; box-shadow: 0 4px 14px rgba(108,92,231,.35);
-    }
-    .page { display: none; }
-    .page.active { display: block; }
-    .card {
-      background: var(--card); border: 1px solid var(--border); border-radius: 18px;
-      padding: 16px; margin-bottom: 12px; box-shadow: 0 8px 32px rgba(0,0,0,.25);
-    }
-    .section-label {
-      font-size: 0.68rem; text-transform: uppercase; letter-spacing: .08em;
-      color: var(--muted); margin-bottom: 8px; font-weight: 600;
-    }
-    .row { display: flex; flex-wrap: wrap; gap: 7px; margin-bottom: 10px; }
-    .chip {
-      border: 1px solid var(--border); background: #1c1c28; color: var(--text);
-      padding: 8px 12px; border-radius: 10px; font-size: 0.8rem; font-weight: 500;
-      cursor: pointer; user-select: none;
-    }
-    .chip.on {
-      background: linear-gradient(135deg, var(--accent), #5a4fcf);
-      border-color: transparent; color: #fff;
-    }
-    .btn {
-      border: 1px solid var(--border); background: #1c1c28; color: var(--text);
-      padding: 10px 14px; border-radius: 11px; font-size: 0.85rem; font-weight: 600;
-      cursor: pointer;
-    }
-    .btn.primary {
-      background: linear-gradient(135deg, var(--accent), #5a4fcf);
-      border-color: transparent; color: #fff;
-    }
-    .btn.green { border-color: #1e4a38; color: var(--green); background: #122a20; }
-    .btn.red { border-color: #5a2030; color: var(--red); background: #2a1218; }
-    .btn.ghost { background: transparent; color: var(--muted); }
-    .btn:disabled { opacity: 0.45; cursor: not-allowed; }
-    input, textarea {
-      width: 100%; background: #0e0e16; border: 1px solid var(--border);
-      border-radius: 12px; color: var(--text); padding: 11px 13px;
-      font-size: 0.9rem; outline: none; margin-bottom: 8px;
-    }
-    textarea {
-      min-height: 160px; font-family: ui-monospace, Menlo, Consolas, monospace;
-      font-size: 0.8rem; line-height: 1.45; resize: vertical;
-    }
-    .controls { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; margin-top: 10px; }
-    .controls input[type=number] { width: 110px; margin: 0; }
-    .stats { display: flex; gap: 14px; flex-wrap: wrap; margin-top: 12px; padding-top: 12px; border-top: 1px solid var(--border); }
-    .stat { font-size: 0.8rem; color: var(--muted); }
-    .stat b { color: var(--text); }
-    .stat.ok b { color: var(--green); }
-    .log {
-      max-height: 300px; overflow-y: auto;
-      font-family: ui-monospace, Menlo, Consolas, monospace; font-size: 0.76rem;
-      line-height: 1.5; background: #0a0a10; border-radius: 12px;
-      padding: 12px; border: 1px solid var(--border);
-    }
-    .log .ok { color: var(--green); } .log .taken { color: var(--muted); }
-    .log .bad { color: var(--red); } .log .warn { color: var(--yellow); }
-    .log .info { color: var(--blue); }
-    .hint { font-size: 0.75rem; color: var(--muted); margin-bottom: 10px; line-height: 1.45; }
-    .toggle-row {
-      display: flex; align-items: center; gap: 10px; margin-bottom: 12px;
-      padding: 10px 12px; background: #0e0e16; border-radius: 12px; border: 1px solid var(--border);
-    }
-    .toggle-row label { font-size: 0.85rem; font-weight: 600; cursor: pointer; flex: 1; }
-    .toggle-row input { width: auto; margin: 0; }
-    .stack-badge {
-      display: inline-block; background: #1e1a3a; border: 1px solid #3d3580;
-      color: var(--accent2); font-size: 0.72rem; padding: 3px 8px; border-radius: 8px;
-      margin: 2px 4px 2px 0;
-    }
-    .progress {
-      height: 6px; background: #0e0e16; border-radius: 4px; margin-top: 10px; overflow: hidden;
-    }
-    .progress > div {
-      height: 100%; width: 0%; background: linear-gradient(90deg, var(--accent), var(--green));
-      transition: width 0.15s;
-    }
-    footer { text-align: center; color: var(--muted); font-size: 0.72rem; margin-top: 16px; }
-  </style>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1"/>
+<title>Discord Username Sniper</title>
+<style>
+:root{--bg:#0b0b10;--card:#14141c;--bd:#2a2a3a;--tx:#f0f0f8;--mu:#8b8ba0;--ac:#6c5ce7;--gn:#00d68f;--rd:#ff6b81;--yl:#ffc048;--bl:#54a0ff}
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:system-ui,-apple-system,sans-serif;background:radial-gradient(800px 400px at 50% -10%,#1a1635,var(--bg));color:var(--tx);min-height:100vh;padding:16px}
+.wrap{max-width:700px;margin:0 auto}
+h1{font-size:1.3rem;margin-bottom:4px}
+.sub{color:var(--mu);font-size:.85rem;margin-bottom:14px}
+.tabs{display:flex;gap:6px;margin-bottom:12px;background:#101018;border:1px solid var(--bd);border-radius:12px;padding:4px}
+.tab{flex:1;padding:10px;border:0;border-radius:9px;background:transparent;color:var(--mu);font-weight:600;cursor:pointer}
+.tab.on{background:linear-gradient(135deg,var(--ac),#5a4fcf);color:#fff}
+.page{display:none}.page.on{display:block}
+.card{background:var(--card);border:1px solid var(--bd);border-radius:16px;padding:14px;margin-bottom:12px}
+.lbl{font-size:.68rem;text-transform:uppercase;letter-spacing:.06em;color:var(--mu);margin:8px 0 6px;font-weight:600}
+.row{display:flex;flex-wrap:wrap;gap:6px}
+.chip{border:1px solid var(--bd);background:#1c1c28;color:var(--tx);padding:7px 11px;border-radius:9px;font-size:.8rem;cursor:pointer}
+.chip.on{background:var(--ac);border-color:transparent}
+.btn{border:1px solid var(--bd);background:#1c1c28;color:var(--tx);padding:10px 14px;border-radius:10px;font-weight:600;font-size:.85rem;cursor:pointer}
+.btn:disabled{opacity:.4;cursor:not-allowed}
+.btn.p{background:linear-gradient(135deg,var(--ac),#5a4fcf);border:0;color:#fff}
+.btn.g{background:#122a20;border-color:#1e4a38;color:var(--gn)}
+.btn.r{background:#2a1218;border-color:#5a2030;color:var(--rd)}
+input,textarea{width:100%;background:#0e0e16;border:1px solid var(--bd);border-radius:10px;color:var(--tx);padding:10px 12px;font-size:.9rem;margin-bottom:8px}
+textarea{min-height:140px;font-family:ui-monospace,monospace;font-size:.8rem;resize:vertical}
+.ctrl{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin-top:8px}
+.ctrl input[type=number]{width:100px;margin:0}
+.ctrl input[type=range]{flex:1;margin:0;accent-color:var(--ac)}
+.hint{font-size:.75rem;color:var(--mu);margin-bottom:8px;line-height:1.4}
+.stats{display:flex;gap:12px;flex-wrap:wrap;margin-top:10px;padding-top:10px;border-top:1px solid var(--bd);font-size:.8rem;color:var(--mu)}
+.stats b{color:var(--tx)}
+.stats .ok b{color:var(--gn)}
+.log{max-height:280px;overflow:auto;background:#0a0a10;border:1px solid var(--bd);border-radius:10px;padding:10px;font-family:ui-monospace,monospace;font-size:.74rem;line-height:1.45}
+.log .ok{color:var(--gn)}.log .bad{color:var(--rd)}.log .warn{color:var(--yl)}.log .info{color:var(--bl)}.log .taken{color:var(--mu)}
+.bar{height:6px;background:#0e0e16;border-radius:4px;margin-top:8px;overflow:hidden}
+.bar>i{display:block;height:100%;width:0;background:linear-gradient(90deg,var(--ac),var(--gn));transition:width .12s}
+.toggle{display:flex;align-items:center;gap:8px;margin-bottom:10px;padding:8px 10px;background:#0e0e16;border-radius:10px;border:1px solid var(--bd);font-size:.85rem}
+.toggle input{width:auto;margin:0}
+</style>
 </head>
 <body>
-  <div class="wrap">
-    <h1>Discord Username Sniper</h1>
-    <p class="sub">Generate · snipe · stop anytime</p>
+<div class="wrap">
+  <h1>Discord Username Sniper</h1>
+  <p class="sub">Generate names · check live · claim if free · stop anytime</p>
 
-    <div class="tabs">
-      <button class="tab active" data-page="setup" id="tabSetup">1 · Setup</button>
-      <button class="tab" data-page="snipe" id="tabSnipe">2 · Snipe</button>
-    </div>
-
-    <div class="page active" id="page-setup">
-      <div class="card">
-        <div class="toggle-row">
-          <input type="checkbox" id="stackMode" />
-          <label for="stackMode">Stack mode — select multiple presets</label>
-        </div>
-        <div class="section-label">Short</div>
-        <div class="row" id="shortBtns"></div>
-        <div class="section-label">Patterns</div>
-        <div class="row" id="patternBtns"></div>
-        <div class="section-label">Wordlists</div>
-        <div class="row" id="wordBtns"></div>
-        <div id="stackPreview" style="margin-top:6px;min-height:24px"></div>
-        <div class="controls">
-          <input id="limit" type="number" value="500" min="10" max="10000" />
-          <button class="btn primary" id="btnGen">Generate</button>
-        </div>
-        <div class="stats">
-          <span class="stat">selected <b id="cSel">1</b></span>
-          <span class="stat">generated <b id="cGen">0</b></span>
-        </div>
-      </div>
-      <div class="card">
-        <div class="section-label">Name list</div>
-        <textarea id="names" placeholder="Generate or paste names (one per line)…"></textarea>
-        <button class="btn primary" id="btnGoSnipe" style="width:100%">Go to Snipe →</button>
-      </div>
-    </div>
-
-    <div class="page" id="page-snipe">
-      <div class="card">
-        <div class="section-label">Targets</div>
-        <textarea id="namesSnipe" placeholder="Names from Setup…"></textarea>
-        <div class="section-label" style="margin-top:8px">Auth</div>
-        <p class="hint">Env DISCORD_TOKEN / DISCORD_PASSWORD on Render work if set. Or paste here.</p>
-        <input id="token" type="password" placeholder="Discord user token" autocomplete="off" />
-        <input id="password" type="password" placeholder="Discord account password" autocomplete="off" />
-        <div class="section-label" style="margin-top:8px">Speed</div>
-        <div class="controls" style="align-items:center">
-          <label style="font-size:0.8rem;color:var(--muted);min-width:70px">RPS <b id="rpsVal">3</b></label>
-          <input id="rps" type="range" min="1" max="10" value="3" step="1" style="flex:1;margin:0;accent-color:#6c5ce7" />
-        </div>
-        <label style="font-size:0.78rem;color:var(--muted);display:flex;align-items:center;gap:8px;margin-top:8px">
-          <input id="stopOnClaim" type="checkbox" checked style="width:auto;margin:0" /> Stop after first successful claim
-        </label>
-        <div class="controls">
-          <button class="btn green" id="btnSnipe">Start snipe</button>
-          <button class="btn red" id="btnStop" disabled>Stop</button>
-          <button class="btn ghost" id="btnBack">← Setup</button>
-        </div>
-        <div class="progress"><div id="bar"></div></div>
-        <div class="stats">
-          <span class="stat">progress <b id="cProg">0/0</b></span>
-          <span class="stat ok">claimed <b id="cClaimed">0</b></span>
-          <span class="stat">taken <b id="cTaken">0</b></span>
-          <span class="stat">failed <b id="cFail">0</b></span>
-        </div>
-      </div>
-      <div class="card">
-        <div class="section-label">Log</div>
-        <div class="log" id="log"></div>
-      </div>
-    </div>
-
-    <footer>Client-side snipe loop · stop anytime · no long server timeout</footer>
+  <div class="tabs">
+    <button class="tab on" id="t1" type="button">1 · Setup</button>
+    <button class="tab" id="t2" type="button">2 · Snipe</button>
   </div>
 
-  <script>
-    const short = [['2C','2C'],['2L','2L'],['2N','2N'],['3C','3C'],['3L','3L'],['3N','3N'],['4N','4N'],['4L','4L'],['4C','4C']];
-    const patterns = [['Semi3L','Semi 3L'],['Dotted','Dotted'],['Repeaters','_Repeaters'],['LetterRepeaters','Letter Repeaters'],['4LPronounceable','4L Pron'],['5LPronounceable','5L Pron'],['Faces','Faces']];
-    const words = [['WordsEN','Words EN'],['WordsFR','Words FR']];
+  <div class="page on" id="p1">
+    <div class="card">
+      <div class="toggle">
+        <input type="checkbox" id="stack"/>
+        <label for="stack">Stack mode (pick multiple presets)</label>
+      </div>
+      <div class="lbl">Short</div>
+      <div class="row" id="short"></div>
+      <div class="lbl">Patterns</div>
+      <div class="row" id="patterns"></div>
+      <div class="lbl">Words</div>
+      <div class="row" id="words"></div>
+      <div class="ctrl">
+        <input type="number" id="limit" value="300" min="10" max="5000"/>
+        <button class="btn p" id="gen" type="button">Generate</button>
+      </div>
+      <div class="stats">selected <b id="nSel">1</b> · generated <b id="nGen">0</b></div>
+    </div>
+    <div class="card">
+      <div class="lbl">Names (one per line)</div>
+      <textarea id="names" placeholder="Generate or paste usernames…"></textarea>
+      <button class="btn p" id="go2" type="button" style="width:100%">Go to Snipe →</button>
+    </div>
+  </div>
 
-    let stackMode = false;
-    const selected = new Set(['3L']);
-    const namesEl = document.getElementById('names');
-    const namesSnipe = document.getElementById('namesSnipe');
-    const logEl = document.getElementById('log');
-    let stopFlag = false;
-    let running = false;
+  <div class="page" id="p2">
+    <div class="card">
+      <div class="lbl">Targets</div>
+      <textarea id="targets" placeholder="Names to snipe…"></textarea>
+      <div class="lbl">Token / password</div>
+      <p class="hint">Uses Render env if set. Or paste user token + Discord password.</p>
+      <input id="token" type="password" placeholder="Discord user token" autocomplete="off"/>
+      <input id="pass" type="password" placeholder="Discord password" autocomplete="off"/>
+      <div class="lbl">Requests per second: <b id="rpsL">2</b></div>
+      <div class="ctrl">
+        <input type="range" id="rps" min="1" max="8" value="2" step="1"/>
+      </div>
+      <label class="hint" style="display:flex;align-items:center;gap:8px;margin-top:6px">
+        <input type="checkbox" id="stopClaim" checked style="width:auto;margin:0"/> Stop after first claim
+      </label>
+      <label class="hint" style="display:flex;align-items:center;gap:8px">
+        <input type="checkbox" id="claimOn" checked style="width:auto;margin:0"/> Auto-claim when available
+      </label>
+      <div class="ctrl">
+        <button class="btn g" id="start" type="button">Start</button>
+        <button class="btn r" id="stop" type="button" disabled>Stop</button>
+        <button class="btn" id="back" type="button">← Setup</button>
+      </div>
+      <div class="bar"><i id="bar"></i></div>
+      <div class="stats">
+        <span>prog <b id="prog">0/0</b></span>
+        <span class="ok">avail <b id="nAv">0</b></span>
+        <span class="ok">claimed <b id="nCl">0</b></span>
+        <span>taken <b id="nTk">0</b></span>
+        <span>err <b id="nEr">0</b></span>
+      </div>
+    </div>
+    <div class="card">
+      <div class="lbl">Log</div>
+      <div class="log" id="log"></div>
+    </div>
+  </div>
+</div>
 
-    function log(msg, cls='') {
-      const d = document.createElement('div');
-      if (cls) d.className = cls;
-      d.textContent = '[' + new Date().toLocaleTimeString() + '] ' + msg;
-      logEl.prepend(d);
-    }
+<script>
+(function(){
+  const short=[['2C','2C'],['2L','2L'],['2N','2N'],['3C','3C'],['3L','3L'],['3N','3N'],['4L','4L'],['4C','4C'],['4N','4N']];
+  const patterns=[['Semi3L','Semi'],['Dotted','Dotted'],['Repeaters','_Rep'],['LetterRepeaters','LRep'],['4LPronounceable','4Pron'],['5LPronounceable','5Pron'],['Faces','Faces']];
+  const words=[['WordsEN','EN'],['WordsFR','FR']];
+  const selected=new Set(['3L']);
+  let stack=false, running=false, stopFlag=false;
 
-    function showPage(id) {
-      document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
-      document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
-      document.getElementById('page-' + id).classList.add('active');
-      document.querySelector('.tab[data-page="'+id+'"]').classList.add('active');
-      if (id === 'snipe' && !namesSnipe.value.trim() && namesEl.value.trim()) {
-        namesSnipe.value = namesEl.value;
-      }
-    }
-    document.getElementById('tabSetup').onclick = () => showPage('setup');
-    document.getElementById('tabSnipe').onclick = () => showPage('snipe');
-    document.getElementById('btnGoSnipe').onclick = () => {
-      namesSnipe.value = namesEl.value;
-      showPage('snipe');
-    };
-    document.getElementById('btnBack').onclick = () => showPage('setup');
+  const $ = id => document.getElementById(id);
+  function log(m,c){const d=document.createElement('div');if(c)d.className=c;d.textContent='['+new Date().toLocaleTimeString()+'] '+m;$('log').prepend(d)}
+  function show(p){
+    $('p1').classList.toggle('on',p===1);$('p2').classList.toggle('on',p===2);
+    $('t1').classList.toggle('on',p===1);$('t2').classList.toggle('on',p===2);
+    if(p===2 && !$('targets').value.trim() && $('names').value.trim()) $('targets').value=$('names').value;
+  }
+  $('t1').onclick=()=>show(1);$('t2').onclick=()=>show(2);
+  $('go2').onclick=()=>{$('targets').value=$('names').value;show(2)};
+  $('back').onclick=()=>show(1);
 
-    document.getElementById('stackMode').onchange = (e) => {
-      stackMode = e.target.checked;
-      if (!stackMode && selected.size > 1) {
-        const keep = [...selected][0];
-        selected.clear();
-        selected.add(keep);
-        document.querySelectorAll('.chip').forEach(c => c.classList.toggle('on', c.dataset.id === keep));
-      }
-      refreshStack();
-    };
-
-    function refreshStack() {
-      document.getElementById('cSel').textContent = selected.size;
-      const box = document.getElementById('stackPreview');
-      box.innerHTML = '';
-      [...selected].forEach(id => {
-        const s = document.createElement('span');
-        s.className = 'stack-badge';
-        s.textContent = id;
-        box.appendChild(s);
-      });
-    }
-
-    function mkChip(id, label, group) {
-      const b = document.createElement('button');
-      b.type = 'button';
-      b.className = 'chip' + (selected.has(id) ? ' on' : '');
-      b.dataset.id = id;
-      b.textContent = label;
-      b.onclick = () => {
-        if (stackMode) {
-          if (selected.has(id)) { if (selected.size > 1) selected.delete(id); }
-          else selected.add(id);
-        } else {
-          selected.clear();
-          selected.add(id);
-        }
-        document.querySelectorAll('.chip').forEach(c => c.classList.toggle('on', selected.has(c.dataset.id)));
-        refreshStack();
+  function paint(){
+    $('nSel').textContent=selected.size;
+    document.querySelectorAll('.chip').forEach(b=>b.classList.toggle('on',selected.has(b.dataset.id)));
+  }
+  function addChips(arr,parent){
+    arr.forEach(([id,label])=>{
+      const b=document.createElement('button');
+      b.type='button';b.className='chip'+(selected.has(id)?' on':'');b.dataset.id=id;b.textContent=label;
+      b.onclick=()=>{
+        if(stack){
+          if(selected.has(id)){if(selected.size>1)selected.delete(id)}else selected.add(id);
+        }else{selected.clear();selected.add(id)}
+        paint();
       };
-      group.appendChild(b);
-    }
-    short.forEach(([id,l]) => mkChip(id,l,document.getElementById('shortBtns')));
-    patterns.forEach(([id,l]) => mkChip(id,l,document.getElementById('patternBtns')));
-    words.forEach(([id,l]) => mkChip(id,l,document.getElementById('wordBtns')));
-    refreshStack();
+      parent.appendChild(b);
+    });
+  }
+  addChips(short,$('short'));addChips(patterns,$('patterns'));addChips(words,$('words'));paint();
 
-    document.getElementById('btnGen').onclick = async () => {
-      if (!selected.size) return log('pick a preset', 'warn');
-      const limit = Math.min(10000, Math.max(10, Number(document.getElementById('limit').value) || 500));
-      const presets = [...selected];
-      log('generating [' + presets.join('+') + '] x ' + limit, 'info');
-      const btn = document.getElementById('btnGen');
-      btn.disabled = true;
-      try {
-        const r = await fetch('/api/generate', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ presets, limit })
-        }).then(x => x.json());
-        if (!r.ok) return log('generate failed: ' + (r.error || 'unknown'), 'bad');
-        namesEl.value = (r.usernames || []).join('\n');
-        document.getElementById('cGen').textContent = r.count || 0;
-        log('generated ' + (r.count || 0) + ' names', 'ok');
-      } catch (e) {
-        log('network: ' + e.message + ' — wait if site just woke up', 'bad');
-      } finally {
-        btn.disabled = false;
-      }
-    };
+  $('stack').onchange=e=>{
+    stack=e.target.checked;
+    if(!stack&&selected.size>1){const k=[...selected][0];selected.clear();selected.add(k);paint()}
+  };
 
-    document.getElementById('rps').oninput = (e) => {
-      document.getElementById('rpsVal').textContent = e.target.value;
-    };
+  $('rps').oninput=e=>{$('rpsL').textContent=e.target.value};
 
-    document.getElementById('btnStop').onclick = () => {
-      stopFlag = true;
-      log('stop requested…', 'warn');
-    };
+  $('gen').onclick=async()=>{
+    if(!selected.size){log('pick a preset','warn');return}
+    const limit=Math.min(5000,Math.max(10,Number($('limit').value)||300));
+    const presets=[...selected];
+    $('gen').disabled=true;
+    log('generate '+presets.join('+')+' x '+limit,'info');
+    try{
+      const r=await fetch('/api/generate',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({presets,limit})}).then(x=>x.json());
+      if(!r.ok){log('gen fail: '+(r.error||'?'),'bad');return}
+      $('names').value=(r.usernames||[]).join('\n');
+      $('nGen').textContent=r.count||0;
+      log('got '+(r.count||0)+' names','ok');
+    }catch(e){log('network: '+e.message,'bad')}
+    finally{$('gen').disabled=false}
+  };
 
-    function sleep(ms) {
-      return new Promise(r => setTimeout(r, ms));
-    }
+  function sleep(ms){return new Promise(r=>setTimeout(r,ms))}
 
-    document.getElementById('btnSnipe').onclick = async () => {
-      if (running) return;
-      const list = namesSnipe.value.split(/\n/).map(s => s.trim()).filter(Boolean);
-      if (!list.length) return log('no names — generate on Setup first', 'warn');
+  $('stop').onclick=()=>{stopFlag=true;log('STOP pressed','warn')};
 
-      const token = document.getElementById('token').value.trim();
-      const password = document.getElementById('password').value;
-      const rps = Math.max(1, Math.min(10, Number(document.getElementById('rps').value) || 3));
-      const delay = Math.round(1000 / rps);
-      const stopOnClaim = document.getElementById('stopOnClaim').checked;
+  $('start').onclick=async()=>{
+    if(running)return;
+    const list=$('targets').value.split(/\n/).map(s=>s.trim()).filter(Boolean);
+    if(!list.length){log('no names — generate first','warn');return}
 
-      try {
-        const st = await fetch('/api/status').then(x => x.json());
-        if (!token && !st.hasEnvToken) {
-          return log('no token — paste token or set DISCORD_TOKEN on Render', 'bad');
-        }
-        if (!password && !st.hasEnvPassword) {
-          return log('no password — paste password or set DISCORD_PASSWORD on Render', 'bad');
-        }
-      } catch (_) {}
+    let token=$('token').value.trim();
+    let pass=$('pass').value;
+    try{
+      const st=await fetch('/api/status').then(x=>x.json());
+      if(!token&&!st.hasEnvToken){log('need token (paste or DISCORD_TOKEN env)','bad');return}
+      if($('claimOn').checked&&!pass&&!st.hasEnvPassword){log('need password for claim (or DISCORD_PASSWORD env)','bad');return}
+    }catch(_){}
 
-      running = true;
-      stopFlag = false;
-      document.getElementById('btnSnipe').disabled = true;
-      document.getElementById('btnStop').disabled = false;
+    running=true;stopFlag=false;
+    $('start').disabled=true;$('stop').disabled=false;
+    let av=0,cl=0,tk=0,er=0;
+    $('nAv').textContent=0;$('nCl').textContent=0;$('nTk').textContent=0;$('nEr').textContent=0;
+    const rps=Math.max(1,Math.min(8,Number($('rps').value)||2));
+    const delay=Math.round(1000/rps);
+    const doClaim=$('claimOn').checked;
+    const stopOnClaim=$('stopClaim').checked;
+    log('START '+list.length+' names @ '+rps+' rps'+(doClaim?' +claim':''),'info');
 
-      let claimed = 0, taken = 0, fail = 0;
-      document.getElementById('cClaimed').textContent = '0';
-      document.getElementById('cTaken').textContent = '0';
-      document.getElementById('cFail').textContent = '0';
-      log('snipe start — ' + list.length + ' names @ ' + rps + ' rps', 'info');
+    for(let i=0;i<list.length;i++){
+      if(stopFlag){log('stopped '+i+'/'+list.length,'warn');break}
+      const u=list[i].toLowerCase();
+      $('prog').textContent=(i+1)+'/'+list.length;
+      $('bar').style.width=Math.round(((i+1)/list.length)*100)+'%';
 
-      for (let i = 0; i < list.length; i++) {
-        if (stopFlag) {
-          log('stopped at ' + i + '/' + list.length, 'warn');
-          break;
-        }
-        const username = list[i].toLowerCase();
-        document.getElementById('cProg').textContent = (i + 1) + '/' + list.length;
-        document.getElementById('bar').style.width = Math.round(((i + 1) / list.length) * 100) + '%';
-
-        try {
-          const checkBody = { username };
-          if (token) checkBody.token = token;
-          const cr = await fetch('/api/check-one', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(checkBody)
-          }).then(x => x.json());
-
-          if (!cr.ok) {
-            fail++;
-            log('error @' + username + ' ' + (cr.error || ''), 'bad');
-          } else if (cr.result.status === 'available') {
-            log('AVAILABLE @' + username + ' — claiming…', 'ok');
-            const claimBody = { username };
-            if (token) claimBody.token = token;
-            if (password) claimBody.password = password;
-            const cl = await fetch('/api/claim', {
-              method: 'POST',
-              headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify(claimBody)
-            }).then(x => x.json());
-
-            if (cl.ok) {
-              claimed++;
-              document.getElementById('cClaimed').textContent = claimed;
-              log('CLAIMED @' + username, 'ok');
-              if (stopOnClaim) {
-                log('stop after claim (enabled)', 'info');
-                break;
+      try{
+        const body={username:u};if(token)body.token=token;
+        const cr=await fetch('/api/check-one',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)}).then(x=>x.json());
+        if(!cr.ok){er++;log('api error @'+u+' '+(cr.error||''),'bad')}
+        else{
+          const s=cr.result||{};
+          if(s.status==='available'){
+            av++;$('nAv').textContent=av;
+            log('AVAILABLE @'+u+(s.method?' ('+s.method+')':''),'ok');
+            if(doClaim){
+              const cb={username:u};if(token)cb.token=token;if(pass)cb.password=pass;
+              const clres=await fetch('/api/claim',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(cb)}).then(x=>x.json());
+              if(clres.ok){
+                cl++;$('nCl').textContent=cl;
+                log('CLAIMED @'+u,'ok');
+                if(stopOnClaim){log('stop after claim','info');break}
+              }else{
+                er++;
+                const msg=clres.claim?.message||clres.check?.status||clres.error||'claim failed';
+                log('claim fail @'+u+' — '+msg,'bad');
               }
-            } else {
-              fail++;
-              const msg = cl.claim?.message || cl.check?.status || cl.error || 'claim failed';
-              log('claim fail @' + username + ' — ' + msg, 'bad');
             }
-          } else if (cr.result.status === 'taken') {
-            taken++;
-            document.getElementById('cTaken').textContent = taken;
-          } else if (cr.result.status === 'invalid') {
-            fail++;
-            log('invalid @' + username + ' ' + (cr.result.reason || ''), 'warn');
-          } else {
-            fail++;
-            log((cr.result.status || 'error') + ' @' + username + ' ' + (cr.result.reason || ''), 'bad');
+          }else if(s.status==='taken'){
+            tk++;$('nTk').textContent=tk;
+            if(tk%25===1)log('taken @'+u+' (and counting)','taken');
+          }else if(s.status==='invalid'){
+            er++;log('invalid @'+u+' '+(s.reason||''),'warn');
+          }else{
+            er++;
+            const ra=s.retryAfter;
+            log((s.reason||s.status||'error')+' @'+u+(ra?' — wait '+Math.ceil(ra)+'s':''),'bad');
+            if(ra&&ra>0){
+              const wait=Math.min(Math.ceil(Number(ra)),120);
+              log('sleeping '+wait+'s for rate limit…','warn');
+              for(let w=0;w<wait&&!stopFlag;w++)await sleep(1000);
+            }
           }
-        } catch (e) {
-          fail++;
-          log('network @' + username + ' ' + e.message, 'bad');
         }
+      }catch(e){er++;log('network @'+u+' '+e.message,'bad')}
+      $('nEr').textContent=er;
+      if(i<list.length-1&&!stopFlag)await sleep(delay);
+    }
 
-        document.getElementById('cFail').textContent = fail;
-        if (i < list.length - 1 && !stopFlag) await sleep(delay);
-      }
+    running=false;$('start').disabled=false;$('stop').disabled=true;
+    log('DONE avail='+av+' claimed='+cl+' taken='+tk+' err='+er,'info');
+  };
 
-      running = false;
-      document.getElementById('btnSnipe').disabled = false;
-      document.getElementById('btnStop').disabled = true;
-      log('snipe finished — claimed ' + claimed + ' / taken ' + taken + ' / fail ' + fail, 'info');
-    };
-
-    fetch('/api/status').then(r => r.json()).then(s => {
-      if (s.hasEnvToken) log('env DISCORD_TOKEN is set', 'info');
-      else log('no env token — paste token on Snipe page', 'warn');
-      if (s.hasEnvPassword) log('env DISCORD_PASSWORD is set', 'info');
-      else log('no env password — paste password on Snipe page', 'warn');
-    }).catch(() => log('status check failed — site may still be waking', 'warn'));
-  </script>
+  fetch('/api/status').then(r=>r.json()).then(s=>{
+    if(s.hasEnvToken)log('env token OK','info');else log('no env token — paste on Snipe page','warn');
+    if(s.hasEnvPassword)log('env password OK','info');else log('no env password — paste for claim','warn');
+  }).catch(()=>log('status fail — site waking?','warn'));
+})();
+</script>
 </body>
 </html>
